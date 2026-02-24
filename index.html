@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eudaimonia — Advertising That Works For You</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #c9a84c;
+      --gold-light: #e8d5a3;
+      --gold-dim: rgba(201, 168, 76, 0.15);
+      --dark: #0d0d0d;
+      --dark-2: #141414;
+      --dark-3: #1c1c1c;
+      --text: #e8e4dc;
+      --text-dim: #8a8478;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+      background: linear-gradient(to bottom, rgba(13,13,13,0.95), transparent);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .nav-logo span {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--gold);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .nav-cta {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--dark);
+      background: var(--gold);
+      padding: 10px 20px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+    }
+
+    .nav-cta:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 48px 80px;
+      position: relative;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 80px;
+      background: linear-gradient(to bottom, var(--gold), transparent);
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.2s forwards;
+    }
+
+    h1 {
+      font-size: clamp(42px, 7vw, 88px);
+      font-weight: 300;
+      line-height: 1.05;
+      margin-bottom: 28px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.4s forwards;
+    }
+
+    h1 em { font-style: italic; color: var(--gold); }
+
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 20px);
+      color: var(--text-dim);
+      max-width: 480px;
+      margin: 0 auto 48px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.5s forwards;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.6s forwards;
+    }
+
+    .btn-primary {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dark);
+      background: var(--gold);
+      padding: 16px 36px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--gold-light);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }
+
+    .btn-primary:hover::before { transform: translateX(0); }
+    .btn-primary span { position: relative; z-index: 1; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,0.25); }
+
+    .btn-secondary {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--text-dim);
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover { color: var(--gold); border-color: var(--gold); }
+
+    .philosophy {
+      padding: 120px 48px;
+      max-width: 820px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .philosophy::before {
+      content: '"';
+      position: absolute;
+      top: 80px;
+      left: 24px;
+      font-size: 240px;
+      line-height: 1;
+      color: var(--gold-dim);
+      font-family: 'Cormorant Garamond', serif;
+      pointer-events: none;
+    }
+
+    .philosophy-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .philosophy-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--gold-dim);
+    }
+
+    .philosophy p {
+      font-size: clamp(18px, 2.2vw, 24px);
+      line-height: 1.75;
+      margin-bottom: 28px;
+    }
+
+    .philosophy p:last-child { margin-bottom: 0; }
+
+    .philosophy strong {
+      font-weight: 600;
+      color: var(--gold);
+      font-style: italic;
+    }
+
+    .how {
+      padding: 100px 48px;
+      background: var(--dark-2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .how::before, .how::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
+    }
+
+    .how::before { top: 0; }
+    .how::after { bottom: 0; }
+
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      color: var(--gold);
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 300;
+      text-align: center;
+      margin-bottom: 72px;
+    }
+
+    .section-title em { font-style: italic; color: var(--gold); }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .step {
+      padding: 48px 40px;
+      background: var(--dark-3);
+      transition: background 0.3s ease;
+    }
+
+    .step:hover { background: #222; }
+
+    .step-number {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      margin-bottom: 24px;
+      display: block;
+    }
+
+    .step-icon { font-size: 32px; margin-bottom: 20px; display: block; }
+
+    .step h3 { font-size: 22px; font-weight: 400; margin-bottom: 12px; }
+
+    .step p { font-size: 15px; color: var(--text-dim); line-height: 1.6; }
+
+    .economy {
+      padding: 120px 48px;
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .economy p {
+      font-size: clamp(16px, 1.8vw, 20px);
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    .economy .highlight {
+      font-size: clamp(18px, 2.2vw, 26px);
+      color: var(--text);
+      font-style: italic;
+      margin: 40px 0;
+      padding: 32px 40px;
+      border-left: 2px solid var(--gold);
+      text-align: left;
+      background: var(--gold-dim);
+    }
+
+    .purchase {
+      padding: 100px 48px;
+      background: var(--dark-2);
+      position: relative;
+    }
+
+    .purchase::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
+    }
+
+    .purchase-inner {
+      max-width: 560px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .purchase h2 {
+      font-size: clamp(24px, 3vw, 36px);
+      font-weight: 300;
+      margin-bottom: 16px;
+    }
+
+    .purchase h2 em { font-style: italic; color: var(--gold); }
+
+    .purchase-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 48px;
+      letter-spacing: 0.05em;
+    }
+
+    .token-input-group {
+      background: var(--dark-3);
+      border: 1px solid rgba(201,168,76,0.2);
+      padding: 40px;
+      margin-bottom: 24px;
+    }
+
+    .token-input-group label {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .token-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .token-row input[type="number"] {
+      flex: 1;
+      background: var(--dark);
+      border: 1px solid rgba(201,168,76,0.3);
+      color: var(--text);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 300;
+      padding: 16px 20px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.3s;
+      -moz-appearance: textfield;
+    }
+
+    .token-row input::-webkit-outer-spin-button,
+    .token-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .token-row input:focus { border-color: var(--gold); }
+
+    .token-price {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    .token-price strong { color: var(--gold); font-size: 20px; }
+
+    .purchase-note {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      line-height: 1.8;
+      margin-top: 20px;
+    }
+
+    #purchase-status {
+      margin-top: 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      min-height: 20px;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+    }
+
+    footer {
+      padding: 48px;
+      border-top: 1px solid rgba(201,168,76,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .footer-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 14px;
+      color: var(--text-dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .footer-links { display: flex; gap: 32px; }
+
+    .footer-links a {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--gold); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px 24px; }
+      .hero { padding: 100px 24px 60px; }
+      .philosophy { padding: 80px 24px; }
+      .philosophy::before { display: none; }
+      .how { padding: 60px 24px; }
+      .steps { grid-template-columns: 1fr; }
+      .economy { padding: 80px 24px; }
+      .purchase { padding: 60px 24px; }
+      footer { padding: 32px 24px; flex-direction: column; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-logo" href="#">
+      <span>Eudaimonia</span>
+    </a>
+    <a class="nav-cta" href="https://chromewebstore.google.com/detail/eudaimonia/pjmfochokhnbcapfmgapipmdnamehgii" target="_blank">Add to Chrome</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <p class="hero-eyebrow">A new kind of attention economy</p>
+    <h1>Advertising that works<br><em>for</em> you</h1>
+    <p class="hero-sub">Block distracting ads. Earn tokens. Discover recommendations aligned with who you actually want to become.</p>
+    <div class="cta-group">
+      <a class="btn-primary" href="https://chromewebstore.google.com/detail/eudaimonia/pjmfochokhnbcapfmgapipmdnamehgii" target="_blank">
+        <span>Add to Chrome — it's free</span>
+      </a>
+      <a class="btn-secondary" href="#philosophy">Read the vision ↓</a>
+    </div>
+  </section>
+
+  <section class="philosophy" id="philosophy">
+    <div class="philosophy-label">The vision</div>
+    <div class="reveal">
+      <p>
+        <strong>Eudaimonia</strong> means <em>'Good Spirit'</em>. It also means reaching one's potential.
+        The Eudaimonia project comes from pondering the question: <em>"how would a society look if it
+        encouraged each citizen to achieve happiness through striving to fulfil completely his or her potential?"</em>
+        And with that question comes another: <em>"how can our current society look more like it?"</em>
+      </p>
+      <p>
+        After much thought, we came to the conclusion that maximum leverage for the second question
+        hides in advertising. Current advertising is a mess — it's the load-bearing beam of the
+        attention economy and also its most irritating feature.
+      </p>
+      <p>
+        But what if it wasn't? What if we could simply tell the ad network what fulfilling our potential
+        looks like, and it bent its considerable strength and ingenuity towards finding us helpful
+        coincidences? <strong>That is the Eudaimonia promise.</strong>
+      </p>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <p class="section-label">How it works</p>
+    <h2 class="section-title">Three steps to <em>better</em> advertising</h2>
+    <div class="steps">
+      <div class="step reveal">
+        <span class="step-number">01</span>
+        <span class="step-icon">🚫</span>
+        <h3>Block distractions</h3>
+        <p>Right-click any ad that works against your goals. Replace it with a small, unobtrusive badge. Reclaim your attention.</p>
+      </div>
+      <div class="step reveal" style="transition-delay:0.15s">
+        <span class="step-number">02</span>
+        <span class="step-icon">🎯</span>
+        <h3>Earn tokens</h3>
+        <p>Complete weekly check-ins reflecting on your systems and habits. Each check-in earns tokens you can spend on the network.</p>
+      </div>
+      <div class="step reveal" style="transition-delay:0.3s">
+        <span class="step-number">03</span>
+        <span class="step-icon">✨</span>
+        <h3>Discover solutions</h3>
+        <p>Where ads were, see community-curated recommendations matched to your actual goals. Serendipity, aligned.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="economy reveal">
+    <p class="section-label">The token economy</p>
+    <div class="highlight">
+      Our pricing is based on the median cost-per-click across advertising markets — roughly $0.25 per token. As that median rises with inflation, so will ours.
+    </div>
+    <p>Tokens are earned free through weekly check-ins. Advertisers spend tokens to promote their links — each click costs one token from their budget.</p>
+    <p>Because our users declare their goals upfront, your ad reaches someone far more likely to convert than a cold impression. Better targeting, transparent pricing, no middlemen extracting rent.</p>
+  </section>
+
+  <section class="purchase" id="purchase">
+    <div class="purchase-inner">
+      <p class="section-label">Already installed?</p>
+      <h2>Top up your <em>tokens</em></h2>
+      <p class="purchase-sub">$0.25 per token · one-time purchase · no subscription</p>
+
+      <div class="token-input-group">
+        <label>How many tokens would you like?</label>
+        <div class="token-row">
+          <input type="number" id="tokenQty" value="20" min="4" max="10000" step="4">
+        </div>
+        <div class="token-price">Total: <strong id="totalPrice">$5.00</strong></div>
+      </div>
+
+      <button class="btn-primary" id="buyBtn" style="width:100%;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;letter-spacing:0.1em;">
+        <span>Proceed to checkout</span>
+      </button>
+
+      <div id="purchase-status"></div>
+
+      <p class="purchase-note">
+        Payments processed securely by Stripe.<br>
+        After checkout, open the Eudaimonia popup and your tokens will appear automatically.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo">Eudaimonia</div>
+    <div class="footer-links">
+      <a href="https://github.com/Chrisjayhenningsen/Eudaimonia" target="_blank">GitHub</a>
+      <a href="https://chromewebstore.google.com/detail/eudaimonia/pjmfochokhnbcapfmgapipmdnamehgii" target="_blank">Chrome Store</a>
+      <a href="https://github.com/Chrisjayhenningsen/Eudaimonia/blob/main/privacy-policy.md" target="_blank">Privacy</a>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+      { threshold: 0.15 }
+    );
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Price calculator
+    const qtyInput = document.getElementById('tokenQty');
+    const totalEl = document.getElementById('totalPrice');
+
+    function updatePrice() {
+      const qty = Math.max(4, parseInt(qtyInput.value) || 4);
+      qtyInput.value = qty;
+      totalEl.textContent = '$' + (qty * 0.25).toFixed(2);
+    }
+
+    qtyInput.addEventListener('input', updatePrice);
+    updatePrice();
+
+    // Checkout
+    document.getElementById('buyBtn').addEventListener('click', async () => {
+      const qty = Math.max(4, parseInt(qtyInput.value) || 4);
+      const statusEl = document.getElementById('purchase-status');
+      const btn = document.getElementById('buyBtn');
+
+      btn.disabled = true;
+      btn.querySelector('span').textContent = 'Creating checkout...';
+      statusEl.textContent = '';
+
+      try {
+        const res = await fetch('/.netlify/functions/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quantity: qty })
+        });
+
+        const data = await res.json();
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          statusEl.textContent = data.error || 'Something went wrong. Please try again.';
+          btn.disabled = false;
+          btn.querySelector('span').textContent = 'Proceed to checkout';
+        }
+      } catch (err) {
+        statusEl.textContent = 'Could not connect. Please try again.';
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 'Proceed to checkout';
+      }
+    });
+  </script>
+</body>
+</html>

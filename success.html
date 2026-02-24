@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment successful — Eudaimonia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root { --gold: #c9a84c; --dark: #0d0d0d; --dark-3: #1c1c1c; --text: #e8e4dc; --text-dim: #8a8478; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--dark); color: var(--text);
+      font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 300;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 48px;
+    }
+    .card { max-width: 520px; background: var(--dark-3); border: 1px solid rgba(201,168,76,0.2); padding: 64px 48px; }
+    .icon { font-size: 56px; margin-bottom: 24px; display: block; }
+    h1 { font-size: 36px; font-weight: 300; margin-bottom: 16px; }
+    h1 em { font-style: italic; color: var(--gold); }
+    .qty { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 32px; min-height: 20px; }
+    p { font-size: 17px; color: var(--text-dim); line-height: 1.7; margin-bottom: 40px; }
+    .btn { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dark); background: var(--gold); padding: 14px 32px; text-decoration: none; display: inline-block; transition: all 0.3s; }
+    .btn:hover { background: #e8d5a3; transform: translateY(-1px); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="icon">🎯</span>
+    <h1>Tokens <em>incoming</em></h1>
+    <p class="qty" id="qty-display"></p>
+    <p>Open the Eudaimonia extension and your tokens will appear in your balance automatically. Thank you for supporting a better internet.</p>
+    <a class="btn" href="/">← Back to Eudaimonia</a>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    if (sessionId) {
+      fetch(`/.netlify/functions/get-session?session_id=${encodeURIComponent(sessionId)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.token_quantity) {
+            document.getElementById('qty-display').textContent =
+              `${data.token_quantity} tokens added to your account`;
+          }
+        })
+        .catch(() => {});
+    }
+  </script>
+</body>
+</html>

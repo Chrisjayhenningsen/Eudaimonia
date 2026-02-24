@@ -1,0 +1,8 @@
+{
+  "name": "eudaimonia-site",
+  "version": "1.0.0",
+  "description": "Eudaimonia landing page and token purchase backend",
+  "dependencies": {
+    "stripe": "^14.0.0"
+  }
+}
