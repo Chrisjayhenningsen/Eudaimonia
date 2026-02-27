@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 500px;
+      padding: 30px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .setup-container {
+      background: white;
+      color: #333;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    
+    .step {
+      display: none;
+    }
+    
+    .step.active {
+      display: block;
+    }
+    
+    .step h2 {
+      font-size: 18px;
+      margin: 0 0 15px 0;
+      color: #4a9eff;
+    }
+    
+    .step p {
+      color: #666;
+      font-size: 14px;
+      margin: 0 0 15px 0;
+      line-height: 1.5;
+    }
+    
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: inherit;
+      margin-bottom: 12px;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #4a9eff;
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    .goal-type-label {
+      font-weight: 500;
+      color: #555;
+      margin: 15px 0 8px 0;
+      display: block;
+    }
+    
+    button {
+      background: #4a9eff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+      margin-top: 10px;
+    }
+    
+    button:hover {
+      background: #3a8eef;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .button-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+    
+    .button-secondary:hover {
+      background: #d0d0d0;
+    }
+    
+    .progress {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 30px;
+    }
+    
+    .progress-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #e0e0e0;
+    }
+    
+    .progress-dot.active {
+      background: #4a9eff;
+    }
+    
+    .progress-dot.complete {
+      background: #4ade80;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+    }
+    
+    .completion-message {
+      text-align: center;
+      padding: 20px 0;
+    }
+    
+    .completion-message h2 {
+      color: #4ade80;
+      font-size: 32px;
+      margin: 0 0 15px 0;
+    }
+    
+    .reward-box {
+      background: #f0f7ff;
+      border: 2px solid #4a9eff;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    
+    .reward-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    
+    .reward-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4a9eff;
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <img src="Eudaimonia_logo.png" alt="Eudaimonia" style="width: 80px; height: 80px;">
+    </div>
+    <h1>🎯 Welcome to the Eudaimonia Project</h1>
+    <p class="subtitle">Let's set up your personal development toolkit</p>
+    
+    <div class="progress" id="progress">
+      <div class="progress-dot active"></div>
+      <div class="progress-dot"></div>
+      <div class="progress-dot"></div>
+      <div class="progress-dot"></div>
+      <div class="progress-dot"></div>
+    </div>
+    
+    <!-- Welcome Screen (Step 0) -->
+    <div class="step active" id="stepWelcome">
+      <div style="text-align: center; margin: 30px 0;">
+        <h2 style="font-size: 24px; margin-bottom: 15px;">Transform Your Digital Experience</h2>
+        <p style="font-size: 16px; line-height: 1.6; color: #666; margin: 0 auto 30px;">
+          Eudaimonia helps you block distracting ads and discover products actually aligned with your personal development goals.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 40px 0;">
+          <div style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">🚫</div>
+            <h3 style="font-size: 16px; margin: 0 0 8px 0;">Block Distractions</h3>
+            <p style="font-size: 13px; color: #999; margin: 0;">Right-click any ad to block it and reclaim your attention</p>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">🎯</div>
+            <h3 style="font-size: 16px; margin: 0 0 8px 0;">Earn Tokens</h3>
+            <p style="font-size: 13px; color: #999; margin: 0;">Complete weekly check-ins to earn tokens you can spend</p>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 10px;">✨</div>
+            <h3 style="font-size: 16px; margin: 0 0 8px 0;">Find Solutions</h3>
+            <p style="font-size: 13px; color: #999; margin: 0;">See recommendations aligned with your actual goals</p>
+          </div>
+        </div>
+        
+        <div style="background: #f0f7ff; border: 2px solid #4a9eff; border-radius: 8px; padding: 20px; margin: 30px 0;">
+          <h3 style="font-size: 16px; margin: 0 0 10px 0;">🎁 Completion Rewards</h3>
+          <p style="font-size: 14px; margin: 0; color: #333;">
+            Finish setup and earn <strong>12 tokens</strong> + <strong>6 invites</strong> to get started!
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Step 1: Long Term Goals -->
+    <div class="step" id="step1">
+      <h2>Long Term Goals</h2>
+      <p>These are your aspirations and positive goals. What was your childhood ambition? What does self-actualization look like for you? What are you doing when you feel most alive?</p>
+      <textarea id="moveToward" placeholder="Take a moment to think about what you want the world to help you move towards. This can be as specific or high level as you like."></textarea>
+    </div>
+    
+    <!-- Step 2: Obstacles -->
+    <div class="step" id="step2">
+      <h2>What obstacles have you encountered?</h2>
+      <p>What habits or situations make moving towards the previous field harder?</p>
+      <textarea id="moveAway" placeholder="Examples: doomscrolling, sugar, standard causes of burnout..."></textarea>
+    </div>
+    
+    <!-- Step 3: Systems -->
+    <div class="step" id="step3">
+      <h2>Systems</h2>
+      <p>Goals give direction, but systems move us towards them. Take a moment to think about the daily habits that will support your progress.</p>
+      <textarea id="dailyHabits" placeholder="Examples: Meditate for 10 minutes every day, Meal prep every Sunday, set aside 30 minutes each day to sit with pen and paper and write if I want to, achieve two or more deep work sessions per week..."></textarea>
+    </div>
+    
+    <!-- Step 4: Product Categories -->
+    <div class="step" id="step4">
+      <h2>What products or services might help?</h2>
+      <p>This helps us show you relevant alternatives to blocked ads. The MVP uses simple keyword matching.</p>
+      <textarea id="productCategories" placeholder="Examples: fitness apps, supportive community, language learning tools, healthy meal delivery, coding courses..."></textarea>
+    </div>
+    
+    <!-- Step 5: Check-in Schedule -->
+    <div class="step" id="step5">
+      <h2>When should we remind you to check in?</h2>
+      <p>Choose a day and time for your weekly check-in, or opt out of reminders. You can use the app as often as you like, but if you check in at least once per week you'll earn tokens - by default we'll remind you when they're about to expire.</p>
+      
+      <label class="goal-type-label">Day of the week:</label>
+      <select id="checkinDay">
+        <option value="">No reminders</option>
+        <option value="0" selected>Sunday</option>
+        <option value="1">Monday</option>
+        <option value="2">Tuesday</option>
+        <option value="3">Wednesday</option>
+        <option value="4">Thursday</option>
+        <option value="5">Friday</option>
+        <option value="6">Saturday</option>
+      </select>
+      
+      <label class="goal-type-label">Time of day:</label>
+      <select id="checkinTime">
+        <option value="09:00">9:00 AM</option>
+        <option value="12:00">12:00 PM</option>
+        <option value="18:00">6:00 PM</option>
+        <option value="21:00" selected>9:00 PM</option>
+      </select>
+
+      <label class="goal-type-label" style="margin-top:20px;">Got an invite code? <span style="font-weight:400;color:#999;">(optional)</span></label>
+      <input type="text" id="inviteCode" placeholder="e.g. EUDA-X7K2"
+        style="text-transform:uppercase;letter-spacing:2px;">
+      <div id="inviteCodeStatus" style="font-size:12px;margin-top:6px;display:none;"></div>
+    </div>
+    
+    <!-- Completion -->
+    <div class="step" id="stepComplete">
+      <div class="completion-message">
+        <h2>🎉 You're all set!</h2>
+        <p>Here's your welcome reward for setting up your profile:</p>
+      </div>
+      
+      <div class="reward-box">
+        <div class="reward-item">
+          <span>Tokens</span>
+          <span class="reward-value" id="finalTokenCount">10</span>
+        </div>
+        <div class="reward-item">
+          <span>Invites</span>
+          <span class="reward-value">3</span>
+        </div>
+      </div>
+      
+      <p style="text-align: center; color: #666; font-size: 14px; margin-top: 20px;">
+        Use tokens to recommend products to other users. Share invites to grow the community.
+      </p>
+    </div>
+    
+    <div class="button-group">
+      <button id="backBtn" class="button-secondary" style="display: none;">Back</button>
+      <button id="nextBtn" style="flex: 1;">Next</button>
+    </div>
+  </div>
+  
+  <script src="firebase-config.js"></script>
+  <script src="setup.js"></script>
+</body>
+</html>

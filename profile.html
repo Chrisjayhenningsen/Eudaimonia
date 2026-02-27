@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 500px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    
+    .field-group {
+      margin-bottom: 25px;
+    }
+    
+    .field-group h2 {
+      font-size: 16px;
+      margin: 0 0 8px 0;
+      color: #4a9eff;
+    }
+    
+    .field-group p {
+      color: #666;
+      font-size: 13px;
+      margin: 0 0 10px 0;
+      line-height: 1.4;
+    }
+    
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #4a9eff;
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    .schedule-group {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .schedule-group > div {
+      flex: 1;
+    }
+    
+    .schedule-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    
+    button {
+      background: #4a9eff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    button:hover {
+      background: #3a8eef;
+    }
+    
+    .button-secondary {
+      background: #e0e0e0;
+      color: #333;
+      margin-top: 0;
+    }
+    
+    .button-secondary:hover {
+      background: #d0d0d0;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 30px;
+    }
+    
+    .blocked-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #fff0f0;
+      border: 1px solid #ffcccc;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+    
+    .blocked-item-text {
+      color: #666;
+      font-size: 13px;
+    }
+    
+    .unblock-btn {
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    .unblock-btn:hover {
+      background: #ff5252;
+    }
+  </style>
+</head>
+<body>
+  <h1>✏️ Edit Your Profile</h1>
+  <p class="subtitle">Update any of your goals, systems, or preferences</p>
+  
+  <div class="field-group">
+    <h2>Long Term Goals</h2>
+    <p>These are your aspirations and positive goals. What was your childhood ambition? What does self-actualization look like for you? What are you doing when you feel most alive?</p>
+    <textarea id="moveToward" placeholder="Take a moment to think about what you want the world to help you move towards. This can be as specific or high level as you like."></textarea>
+  </div>
+  
+  <div class="field-group">
+    <h2>What obstacles have you encountered?</h2>
+    <p>What habits or situations make moving towards the previous field harder?</p>
+    <textarea id="moveAway" placeholder="Examples: doomscrolling, sugar, standard causes of burnout..."></textarea>
+  </div>
+  
+  <div class="field-group">
+    <h2>Systems</h2>
+    <p>Goals give direction, but systems move us towards them. Take a moment to think about the daily habits that will support your progress.</p>
+    <textarea id="dailyHabits" placeholder="Examples: Meditate for 10 minutes every day, Meal prep every Sunday, set aside 30 minutes each day to sit with pen and paper and write if I want to, achieve two or more deep work sessions per week..."></textarea>
+  </div>
+  
+  <div class="field-group">
+    <h2>What products or services might help?</h2>
+    <p>This helps us show you relevant alternatives to blocked ads. The MVP uses simple keyword matching.</p>
+    <textarea id="productCategories" placeholder="Examples: fitness apps, supportive community, language learning tools, healthy meal delivery, coding courses..."></textarea>
+  </div>
+  
+  <div class="field-group">
+    <h2>When should we remind you to check in?</h2>
+    <p>Choose a day and time for your weekly check-in, or opt out of reminders. You can use the app as often as you like, but if you check in at least once per week you'll earn tokens - by default we'll remind you when they're about to expire.</p>
+    
+    <div class="schedule-group">
+      <div>
+        <label>Day of the week:</label>
+        <select id="checkinDay">
+          <option value="">No reminders</option>
+          <option value="0" selected>Sunday</option>
+          <option value="1">Monday</option>
+          <option value="2">Tuesday</option>
+          <option value="3">Wednesday</option>
+          <option value="4">Thursday</option>
+          <option value="5">Friday</option>
+          <option value="6">Saturday</option>
+        </select>
+      </div>
+      
+      <div>
+        <label>Time of day:</label>
+        <select id="checkinTime">
+          <option value="09:00">9:00 AM</option>
+          <option value="12:00">12:00 PM</option>
+          <option value="18:00">6:00 PM</option>
+          <option value="21:00" selected>9:00 PM</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  
+  <div class="field-group">
+    <h2>🚫 Blocked Content</h2>
+    <p>Manage domains and categories you've blocked</p>
+    
+    <div id="blockedSources" style="margin-bottom: 15px;">
+      <h3 style="font-size: 14px; color: #666; margin: 0 0 8px 0;">Blocked Sources:</h3>
+      <div id="blockedSourcesList" style="font-size: 13px; color: #666;">
+        Loading...
+      </div>
+    </div>
+    
+    <div id="blockedCategories">
+      <h3 style="font-size: 14px; color: #666; margin: 0 0 8px 0;">Blocked Categories:</h3>
+      <div id="blockedCategoriesList" style="font-size: 13px; color: #666;">
+        Loading...
+      </div>
+    </div>
+  </div>
+  
+  <div class="button-group">
+    <button class="button-secondary" id="cancelBtn">Cancel</button>
+    <button id="saveBtn" style="flex: 2;">Save Changes</button>
+  </div>
+  
+  <script src="profile.js"></script>
+</body>
+</html>

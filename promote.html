@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 500px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    
+    .token-display {
+      background: #f0f7ff;
+      border: 2px solid #4a9eff;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .token-count {
+      font-size: 32px;
+      font-weight: bold;
+      color: #4a9eff;
+    }
+    
+    .token-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .info-box {
+      background: #fff9e6;
+      border: 2px solid #ffa94d;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .info-box p {
+      margin: 0 0 8px 0;
+      color: #666;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    .info-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    .info-box strong {
+      color: #ff8800;
+    }
+    
+    .field-group {
+      margin-bottom: 20px;
+    }
+    
+    .field-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .field-group .hint {
+      font-size: 12px;
+      color: #999;
+      font-weight: normal;
+      margin-left: 5px;
+    }
+    
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #4a9eff;
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    button {
+      background: #4a9eff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    button:hover {
+      background: #3a8eef;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .button-secondary {
+      background: #e0e0e0;
+      color: #333;
+      margin-top: 0;
+    }
+    
+    .button-secondary:hover {
+      background: #d0d0d0;
+    }
+    
+    .promo-stat-item {
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    
+    .promo-stat-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 2px;
+    }
+    
+    .promo-stat-url {
+      font-size: 11px;
+      color: #999;
+      font-family: monospace;
+      margin-bottom: 6px;
+    }
+    
+    .promo-stat-clicks {
+      font-size: 13px;
+      color: #333;
+    }
+    
+    .clicks-count {
+      font-size: 20px;
+      font-weight: bold;
+      color: #51cf66;
+    }
+    
+    .clicks-tokens {
+      color: #ff8800;
+      font-size: 12px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .cost-display {
+      background: #e8f5e9;
+      border: 2px solid #51cf66;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 15px;
+      text-align: center;
+      font-size: 16px;
+      color: #333;
+    }
+    
+    .cost-display .cost-amount {
+      font-size: 24px;
+      font-weight: bold;
+      color: #51cf66;
+    }
+    
+    .warning {
+      background: #fff0f0;
+      border: 2px solid #ff6b6b;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #c92a2a;
+    }
+
+    .review-checking {
+      background: #f5f5f5;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+    }
+
+    .review-blocked {
+      background: #fff0f0;
+      border: 2px solid #ff6b6b;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #c92a2a;
+      line-height: 1.5;
+    }
+
+    .review-blocked strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 15px;
+    }
+
+    .review-safe {
+      background: #e8f5e9;
+      border: 2px solid #51cf66;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-top: 15px;
+      font-size: 13px;
+      color: #2e7d32;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 Promote a Link</h1>
+  <p class="subtitle">Share products and services aligned with the community's goals</p>
+  
+  <div class="token-display">
+    <div style="display: flex; gap: 20px; justify-content: center;">
+      <div>
+        <div class="token-count" id="tokenCount">0</div>
+        <div class="token-label">Tokens Available</div>
+      </div>
+      <div>
+        <div class="token-count" id="inviteCount" style="color: #ff69b4;">0</div>
+        <div class="token-label">Invites Left</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="info-box">
+    <p><strong>How it works:</strong></p>
+    <p>• Your <strong>first promotion ever</strong> requires 1 invite (anti-spam)</p>
+    <p>• After that, promoting is free! (just costs tokens)</p>
+    <p>• First time promoting any link: <strong>1 token</strong></p>
+    <p>• Re-promoting your own link: <strong>2 tokens</strong></p>
+    <p>• Each click depletes your promotion's budget by 1</p>
+    <p>• Earn invites through check-ins to give to others!</p>
+  </div>
+  
+  <div class="field-group">
+    <label>
+      URL
+      <span class="hint">(The link you want to promote)</span>
+    </label>
+    <input type="url" id="promoUrl" placeholder="https://example.com" />
+  </div>
+  
+  <div class="field-group">
+    <label>
+      Title
+      <span class="hint">(Short, catchy name)</span>
+    </label>
+    <input type="text" id="promoTitle" placeholder="e.g., Productivity App for Writers" maxlength="80" />
+  </div>
+  
+  <div class="field-group">
+    <label>
+      Description
+      <span class="hint">(What makes this valuable?)</span>
+    </label>
+    <textarea id="promoDescription" placeholder="Explain what this is and why it's worth checking out..." maxlength="300"></textarea>
+  </div>
+  
+  <div class="field-group">
+    <label>
+      Keywords
+      <span class="hint">(Comma-separated, for matching with user goals)</span>
+    </label>
+    <input type="text" id="promoKeywords" placeholder="e.g., productivity, writing, focus, creativity" />
+  </div>
+  
+  <div id="costDisplay" style="display: none;"></div>
+  <div id="warningDisplay" style="display: none;"></div>
+  <div id="reviewDisplay" style="display: none;"></div>
+  
+  <div class="button-group">
+    <button class="button-secondary" id="cancelBtn">Cancel</button>
+    <button id="submitBtn" style="flex: 2;">Submit Promotion</button>
+  </div>
+  
+  <button id="insightsBtn" style="margin-top: 15px; background: #6c757d;">
+    📊 View Advertiser Insights
+  </button>
+  
+  <script src="firebase-config.js"></script>
+  <script src="promote.js"></script>
+</body>
+</html>

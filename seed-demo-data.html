@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Demo Data Seeder - Eudaimonia</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    
+    h1 {
+      color: #333;
+    }
+    
+    .warning {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    
+    .success {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    
+    button {
+      background: #4a9eff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px 10px 10px 0;
+    }
+    
+    button:hover {
+      background: #3a8eef;
+    }
+    
+    button.danger {
+      background: #dc3545;
+    }
+    
+    button.danger:hover {
+      background: #c82333;
+    }
+    
+    #log {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌱 Eudaimonia Demo Data Seeder</h1>
+  
+  <div class="warning">
+    ⚠️ <strong>Warning:</strong> This will add demo promotions to your Firebase database. Use this to prepare for demos/testing.
+  </div>
+  
+  <button id="seedBtn">Seed 30 Demo Promotions</button>
+  <button id="clearBtn" class="danger">Clear All Promotions</button>
+  
+  <div id="status"></div>
+  <div id="log"></div>
+  
+  <script>
+    const FIREBASE_PROJECT_ID = 'eudaimonia-350ce';
+    const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+    
+    const demoPromotions = [
+      // Productivity & Focus
+      {
+        title: "Notion - All-in-one workspace",
+        url: "https://notion.so",
+        description: "Organize your life with notes, tasks, wikis, and databases all in one place. Perfect for productivity enthusiasts.",
+        keywords: ["productivity", "organization", "notes", "task management"],
+        budget: 5
+      },
+      {
+        title: "Forest App - Stay focused, be present",
+        url: "https://forestapp.cc",
+        description: "Gamified focus timer that plants real trees. Beat phone addiction while helping the planet.",
+        keywords: ["focus", "productivity", "phone addiction", "mindfulness"],
+        budget: 8
+      },
+      {
+        title: "Todoist - Simple task management",
+        url: "https://todoist.com",
+        description: "Trusted by millions to organize work and life. Clean interface, powerful features.",
+        keywords: ["productivity", "todo", "task management", "organization"],
+        budget: 6
+      },
+      
+      // Fitness & Health
+      {
+        title: "MyFitnessPal - Calorie counter",
+        url: "https://myfitnesspal.com",
+        description: "Track nutrition, count calories, and reach your health goals with the world's largest food database.",
+        keywords: ["fitness", "health", "nutrition", "weight loss", "diet"],
+        budget: 7
+      },
+      {
+        title: "Headspace - Meditation made simple",
+        url: "https://headspace.com",
+        description: "Learn meditation and mindfulness skills from world-class teachers. Reduce stress, sleep better.",
+        keywords: ["meditation", "mindfulness", "stress", "anxiety", "sleep"],
+        budget: 10
+      },
+      {
+        title: "Fitbod - AI-powered workout plans",
+        url: "https://fitbod.me",
+        description: "Personalized workout routines that adapt to your goals, experience, and available equipment.",
+        keywords: ["fitness", "workout", "gym", "strength training", "exercise"],
+        budget: 9
+      },
+      {
+        title: "Zero - Intermittent fasting tracker",
+        url: "https://zerofasting.com",
+        description: "Simple, effective intermittent fasting tracker backed by science. Thousands of success stories.",
+        keywords: ["health", "fasting", "weight loss", "nutrition", "diet"],
+        budget: 6
+      },
+      
+      // Learning & Skills
+      {
+        title: "Coursera - Online courses from top universities",
+        url: "https://coursera.org",
+        description: "Learn from Yale, Stanford, Google. Professional certificates and degrees available.",
+        keywords: ["learning", "education", "skills", "career", "courses"],
+        budget: 8
+      },
+      {
+        title: "Skillshare - Creative classes",
+        url: "https://skillshare.com",
+        description: "Thousands of classes in design, photography, business, and more. Learn by doing.",
+        keywords: ["learning", "creativity", "skills", "design", "art"],
+        budget: 7
+      },
+      {
+        title: "Duolingo - Learn languages for free",
+        url: "https://duolingo.com",
+        description: "The world's most popular way to learn languages. Gamified, effective, and fun.",
+        keywords: ["learning", "languages", "education", "travel", "skills"],
+        budget: 5
+      },
+      
+      // Mental Health & Wellbeing
+      {
+        title: "Calm - #1 app for sleep and meditation",
+        url: "https://calm.com",
+        description: "Sleep stories, breathing programs, masterclasses, and relaxing music. Reduce anxiety.",
+        keywords: ["meditation", "sleep", "anxiety", "stress", "mindfulness"],
+        budget: 9
+      },
+      {
+        title: "BetterHelp - Online therapy",
+        url: "https://betterhelp.com",
+        description: "Professional counseling from licensed therapists. Private, affordable, convenient.",
+        keywords: ["therapy", "mental health", "anxiety", "depression", "counseling"],
+        budget: 12
+      },
+      {
+        title: "Insight Timer - Free meditation app",
+        url: "https://insighttimer.com",
+        description: "World's largest library of free guided meditations. 100,000+ tracks from teachers worldwide.",
+        keywords: ["meditation", "mindfulness", "sleep", "stress", "anxiety"],
+        budget: 4
+      },
+      
+      // Finance & Career
+      {
+        title: "You Need A Budget (YNAB)",
+        url: "https://youneedabudget.com",
+        description: "Award-winning budgeting software that helps you stop living paycheck to paycheck.",
+        keywords: ["finance", "budgeting", "money", "savings", "debt"],
+        budget: 8
+      },
+      {
+        title: "LinkedIn Learning - Professional development",
+        url: "https://linkedin.com/learning",
+        description: "Learn business, tech, and creative skills from industry experts. Advance your career.",
+        keywords: ["career", "learning", "skills", "business", "professional"],
+        budget: 7
+      },
+      {
+        title: "Mint - Free budgeting app",
+        url: "https://mint.com",
+        description: "Track spending, create budgets, and manage your finances all in one place. Completely free.",
+        keywords: ["finance", "budgeting", "money", "savings", "spending"],
+        budget: 5
+      },
+      
+      // Relationships & Social
+      {
+        title: "Gottman Card Decks - Relationship questions",
+        url: "https://gottman.com/card-decks",
+        description: "Science-backed conversation starters to deepen intimacy and understanding with your partner.",
+        keywords: ["relationships", "communication", "marriage", "dating", "connection"],
+        budget: 6
+      },
+      {
+        title: "Meetup - Find your community",
+        url: "https://meetup.com",
+        description: "Discover events and groups near you. Make friends, learn new things, pursue your passions.",
+        keywords: ["social", "community", "friends", "hobbies", "networking"],
+        budget: 4
+      },
+      
+      // Habit Building
+      {
+        title: "Habitica - Gamify your life",
+        url: "https://habitica.com",
+        description: "Treat your life like a game. Level up by completing real-world tasks and building better habits.",
+        keywords: ["habits", "productivity", "motivation", "goals", "gamification"],
+        budget: 7
+      },
+      {
+        title: "Streaks - Habit tracking simplified",
+        url: "https://streaksapp.com",
+        description: "Track up to 12 habits. Beautiful design, Apple Watch support, health integration.",
+        keywords: ["habits", "tracking", "goals", "productivity", "routine"],
+        budget: 5
+      },
+      {
+        title: "Atomic Habits by James Clear",
+        url: "https://jamesclear.com/atomic-habits",
+        description: "The #1 New York Times bestseller on building good habits and breaking bad ones.",
+        keywords: ["habits", "self-improvement", "goals", "productivity", "reading"],
+        budget: 9
+      },
+      
+      // Creativity & Hobbies
+      {
+        title: "Procreate - Digital art on iPad",
+        url: "https://procreate.art",
+        description: "Award-winning creative app for sketching, painting, and illustrating. Used by professionals.",
+        keywords: ["art", "creativity", "drawing", "design", "hobbies"],
+        budget: 6
+      },
+      {
+        title: "MasterClass - Learn from the best",
+        url: "https://masterclass.com",
+        description: "Online classes taught by world-renowned experts. From Gordon Ramsay to Neil Gaiman.",
+        keywords: ["learning", "skills", "hobbies", "creativity", "education"],
+        budget: 10
+      },
+      
+      // Sleep & Recovery
+      {
+        title: "Sleep Cycle - Smart alarm clock",
+        url: "https://sleepcycle.com",
+        description: "Wake up feeling rested. Tracks sleep quality and wakes you during light sleep phase.",
+        keywords: ["sleep", "health", "recovery", "energy", "wellness"],
+        budget: 5
+      },
+      {
+        title: "Oura Ring - Sleep & recovery tracking",
+        url: "https://ouraring.com",
+        description: "Accurate health insights from your finger. Track sleep, activity, and readiness.",
+        keywords: ["sleep", "fitness", "health", "recovery", "tracking"],
+        budget: 8
+      },
+      
+      // Reading & Knowledge
+      {
+        title: "Blinkist - Big ideas in 15 minutes",
+        url: "https://blinkist.com",
+        description: "Key insights from 5000+ nonfiction books. Perfect for busy people who want to learn.",
+        keywords: ["reading", "learning", "books", "knowledge", "productivity"],
+        budget: 7
+      },
+      {
+        title: "Audible - Audiobooks & podcasts",
+        url: "https://audible.com",
+        description: "Listen to bestsellers, exclusive series, and thousands of audiobooks. Learn on the go.",
+        keywords: ["reading", "books", "learning", "knowledge", "audio"],
+        budget: 6
+      },
+      
+      // Time Management
+      {
+        title: "RescueTime - Automatic time tracking",
+        url: "https://rescuetime.com",
+        description: "Understand how you spend your time. Get detailed reports and insights to boost productivity.",
+        keywords: ["productivity", "time management", "focus", "tracking", "work"],
+        budget: 6
+      },
+      {
+        title: "Toggl Track - Simple time tracking",
+        url: "https://toggl.com",
+        description: "One-click time tracking for teams and freelancers. Beautiful reports, painless timesheets.",
+        keywords: ["productivity", "time management", "work", "tracking", "freelance"],
+        budget: 5
+      },
+      
+      // Minimalism & Decluttering
+      {
+        title: "The Minimalists - Less is more",
+        url: "https://theminimalists.com",
+        description: "Simplify your life with intentional living. Essays, podcasts, and resources on minimalism.",
+        keywords: ["minimalism", "decluttering", "simple living", "intentional", "organization"],
+        budget: 4
+      },
+      {
+        title: "Goodbye, Things by Fumio Sasaki",
+        url: "https://amazon.com/Goodbye-Things-New-Japanese-Minimalism/dp/0393609030",
+        description: "A Japanese guide to minimalism. Transform your life by letting go of excess.",
+        keywords: ["minimalism", "decluttering", "reading", "simple living", "books"],
+        budget: 5
+      }
+    ];
+    
+    function log(message) {
+      const logDiv = document.getElementById('log');
+      logDiv.textContent += `${new Date().toLocaleTimeString()} - ${message}\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    
+    function showStatus(message, type = 'success') {
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = type;
+      statusDiv.innerHTML = `<strong>${type === 'success' ? '✅' : '❌'}</strong> ${message}`;
+    }
+    
+    async function seedDemoData() {
+      const btn = document.getElementById('seedBtn');
+      btn.disabled = true;
+      btn.textContent = 'Seeding...';
+      
+      document.getElementById('log').textContent = '';
+      log('Starting demo data seeding...');
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const promo of demoPromotions) {
+        try {
+          const promotion = {
+            url: promo.url,
+            title: promo.title,
+            description: promo.description,
+            keywords: promo.keywords,
+            timestamp: new Date().toISOString(),
+            cost: promo.budget,
+            budget: promo.budget,
+            clicks: 0
+          };
+          
+          const response = await fetch(`${FIRESTORE_URL}/promotions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fields: {
+                url: { stringValue: promotion.url },
+                title: { stringValue: promotion.title },
+                description: { stringValue: promotion.description },
+                keywords: {
+                  arrayValue: {
+                    values: promotion.keywords.map(k => ({ stringValue: k }))
+                  }
+                },
+                timestamp: { stringValue: promotion.timestamp },
+                cost: { integerValue: promotion.cost.toString() },
+                budget: { integerValue: promotion.budget.toString() },
+                clicks: { integerValue: '0' }
+              }
+            })
+          });
+          
+          if (response.ok) {
+            successCount++;
+            log(`✓ Added: ${promo.title}`);
+          } else {
+            failCount++;
+            log(`✗ Failed: ${promo.title}`);
+          }
+          
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (error) {
+          failCount++;
+          log(`✗ Error adding ${promo.title}: ${error.message}`);
+        }
+      }
+      
+      log(`\nSeeding complete! Success: ${successCount}, Failed: ${failCount}`);
+      showStatus(`Successfully seeded ${successCount} demo promotions!`, 'success');
+      
+      btn.disabled = false;
+      btn.textContent = 'Seed 30 Demo Promotions';
+    }
+    
+    async function clearAllPromotions() {
+      if (!confirm('Are you sure you want to delete ALL promotions? This cannot be undone!')) {
+        return;
+      }
+      
+      const btn = document.getElementById('clearBtn');
+      btn.disabled = true;
+      btn.textContent = 'Clearing...';
+      
+      document.getElementById('log').textContent = '';
+      log('Fetching all promotions...');
+      
+      try {
+        const response = await fetch(`${FIRESTORE_URL}/promotions`);
+        const data = await response.json();
+        const documents = data.documents || [];
+        
+        log(`Found ${documents.length} promotions to delete`);
+        
+        let deleteCount = 0;
+        for (const doc of documents) {
+          try {
+            const docId = doc.name.split('/').pop();
+            await fetch(`${FIRESTORE_URL}/promotions/${docId}`, {
+              method: 'DELETE'
+            });
+            deleteCount++;
+            log(`✓ Deleted promotion ${deleteCount}/${documents.length}`);
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+          } catch (error) {
+            log(`✗ Error deleting: ${error.message}`);
+          }
+        }
+        
+        log(`\nClearing complete! Deleted ${deleteCount} promotions`);
+        showStatus(`Successfully deleted ${deleteCount} promotions`, 'success');
+        
+      } catch (error) {
+        log(`Error: ${error.message}`);
+        showStatus(`Error: ${error.message}`, 'warning');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Clear All Promotions';
+    }
+    
+    document.getElementById('seedBtn').addEventListener('click', seedDemoData);
+    document.getElementById('clearBtn').addEventListener('click', clearAllPromotions);
+  </script>
+</body>
+</html>

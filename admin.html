@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 600px;
+      padding: 30px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    
+    .admin-container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      font-size: 28px;
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    
+    .flag-group {
+      margin-bottom: 25px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .flag-group:last-child {
+      border-bottom: none;
+    }
+    
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .description {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 10px;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #4a9eff;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 30px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    .primary-btn {
+      background: #4a9eff;
+      color: white;
+    }
+    
+    .primary-btn:hover {
+      background: #3a8eef;
+    }
+    
+    .secondary-btn {
+      background: #e0e0e0;
+      color: #333;
+    }
+    
+    .secondary-btn:hover {
+      background: #d0d0d0;
+    }
+    
+    .status-message {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .status-message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #51cf66;
+    }
+    
+    .status-message.error {
+      background: #fff0f0;
+      color: #c92a2a;
+      border: 1px solid #ff6b6b;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>⚙️ Feature Flags Admin</h1>
+    <p class="subtitle">Update feature flags to A/B test different behaviors</p>
+    
+    <div class="flag-group">
+      <label>Promotion Display Mode</label>
+      <p class="description">What users see first in promotion cards</p>
+      <select id="promotionDisplay">
+        <option value="title">Title (default)</option>
+        <option value="url">URL</option>
+      </select>
+    </div>
+    
+    <div class="flag-group">
+      <label>Token Earning Rate</label>
+      <p class="description">Tokens earned per system during check-in</p>
+      <input type="number" id="tokenEarningRate" value="2" min="1" max="10">
+    </div>
+    
+    <div class="flag-group">
+      <label>Setup Token Reward</label>
+      <p class="description">Tokens awarded for completing initial setup</p>
+      <input type="number" id="setupTokenReward" value="10" min="1" max="50">
+    </div>
+    
+    <div class="flag-group">
+      <label>Check-in Frequency</label>
+      <p class="description">How often users should check in</p>
+      <select id="checkInFrequency">
+        <option value="daily">Daily</option>
+        <option value="weekly" selected>Weekly</option>
+        <option value="biweekly">Bi-weekly</option>
+      </select>
+    </div>
+    
+    <div class="flag-group">
+      <label>Show Keywords in Promotions</label>
+      <p class="description">Display keyword tags on promotion cards</p>
+      <select id="showKeywordsInPromo">
+        <option value="true" selected>Yes</option>
+        <option value="false">No</option>
+      </select>
+    </div>
+    
+    <div class="flag-group">
+      <label>Google Safe Browsing API Key</label>
+      <p class="description">Enables URL safety checks on promotion submissions. Get a free key from Google Cloud Console.</p>
+      <input type="text" id="safeBrowsingKey" placeholder="AIza...">
+    </div>
+
+    <div class="flag-group">
+      <label>Content Blocklist</label>
+      <p class="description">Comma-separated terms that will block a promotion if found in title, description, or keywords.</p>
+      <textarea id="blocklist" rows="4" style="width:100%;padding:10px 12px;border:2px solid #e0e0e0;border-radius:6px;font-size:14px;box-sizing:border-box;font-family:inherit;" placeholder="e.g. casino, porn, scam, mlm, pyramid"></textarea>
+    </div>
+
+    <div class="flag-group">
+      <label>Authentication System</label>
+      <p class="description">How users authenticate (anonymous is recommended for MVP)</p>
+      <select id="authSystem">
+        <option value="anonymous" selected>Anonymous (frictionless)</option>
+        <option value="email">Email Sign-In (coming soon)</option>
+        <option value="none">None (testing only)</option>
+      </select>
+    </div>
+    
+    <div class="flag-group">
+      <label>Require Invites for Submissions</label>
+      <p class="description">Users must have invites to submit promotions (spam protection)</p>
+      <select id="requireInvites">
+        <option value="true" selected>Yes (recommended)</option>
+        <option value="false">No</option>
+      </select>
+    </div>
+    
+    <div class="button-group">
+      <button class="secondary-btn" id="loadBtn">Load Current Flags</button>
+      <button class="primary-btn" id="saveBtn">Save to Firebase</button>
+    </div>
+    
+    <div class="status-message" id="statusMessage"></div>
+  </div>
+  
+  <script src="admin.js"></script>
+</body>
+</html>
