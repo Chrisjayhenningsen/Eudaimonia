@@ -21,7 +21,7 @@ exports.handler = async (event) => {
         quantity: quantity
       }],
       mode: 'payment',
-      success_url: `${process.env.SITE_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.SITE_URL}success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.SITE_URL}/#purchase`,
       metadata: {
         token_quantity: quantity.toString()
