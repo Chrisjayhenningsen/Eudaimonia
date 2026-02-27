@@ -33,13 +33,6 @@
       font-size: 14px;
       color: #333;
     }
-    .status {
-      margin-top: 16px;
-      font-size: 13px;
-      color: #51cf66;
-      font-weight: 600;
-      min-height: 20px;
-    }
   </style>
 </head>
 <body>
@@ -51,21 +44,6 @@
     <div class="note">
       💡 Tokens are credited the next time you open the extension. You can close this tab.
     </div>
-    <div class="status" id="status"></div>
   </div>
-
-  <script>
-    // Grab the Stripe session ID from the URL and post it to the extension via content.js
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session_id');
-
-    if (sessionId) {
-      // content.js is listening for this message on this origin
-      window.postMessage({ type: 'EUDAIMONIA_PURCHASE', sessionId: sessionId }, '*');
-      document.getElementById('status').textContent = '✓ Extension notified – open the popup to see your tokens!';
-    } else {
-      document.getElementById('status').textContent = 'Session not found – contact support if tokens don\'t appear.';
-    }
-  </script>
 </body>
 </html>
