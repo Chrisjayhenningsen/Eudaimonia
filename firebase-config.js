@@ -1,7 +1,6 @@
 // Firebase REST API wrapper - no SDK needed
 const FIREBASE_PROJECT_ID = 'eudaimonia-350ce';
 const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
-const FIREBASE_API_KEY = 'AIzaSyBBK2zeQBWATGxfb-d9XUvhk3QDd4fdpQU';
 
 // Current user
 let currentUser = null;
