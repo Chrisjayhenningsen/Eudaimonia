@@ -1,49 +1,175 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Purchase Complete – Eudaimonia</title>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
     }
+
     .card {
       background: white;
       border-radius: 16px;
-      padding: 40px;
+      padding: 48px 40px;
+      max-width: 480px;
+      width: 100%;
       text-align: center;
-      max-width: 420px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
     }
-    .icon { font-size: 64px; margin-bottom: 20px; }
-    h1 { color: #333; margin: 0 0 12px; font-size: 28px; }
-    p  { color: #666; line-height: 1.6; margin: 0 0 10px; }
-    .note {
-      background: #f0f7ff;
-      border: 2px solid #4a9eff;
-      border-radius: 8px;
-      padding: 15px;
-      margin-top: 24px;
-      font-size: 14px;
+
+    .icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    h1 {
+      font-size: 28px;
       color: #333;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .steps {
+      background: #f8f9ff;
+      border: 1px solid #e0e8ff;
+      border-radius: 10px;
+      padding: 20px 24px;
+      text-align: left;
+      margin-bottom: 28px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+      font-size: 14px;
+      color: #444;
+      line-height: 1.5;
+    }
+
+    .step:not(:last-child) {
+      border-bottom: 1px solid #eee;
+    }
+
+    .step-num {
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .tip {
+      background: #fff9e6;
+      border: 1px solid #ffd93d;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .tip strong {
+      color: #333;
+    }
+
+    /* Status shown while we post the message */
+    #status {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #999;
+      min-height: 20px;
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="icon">🎉</div>
+    <span class="icon">🎉</span>
     <h1>Purchase complete!</h1>
-    <p>Your tokens are on their way.</p>
-    <p>Open the Eudaimonia extension popup and they'll appear automatically.</p>
-    <div class="note">
-      💡 Tokens are credited the next time you open the extension. You can close this tab.
+    <p class="subtitle">
+      Your tokens are on their way.<br>
+      Open the Eudaimonia extension popup and they'll appear automatically.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>Click the Eudaimonia icon in your Chrome toolbar</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>Your new token balance will appear at the top</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>Use tokens to promote links or top up your ad budget</div>
+      </div>
     </div>
+
+    <div class="tip">
+      💡 <strong>Tokens are credited the next time you open the extension.</strong>
+      You can close this tab.
+    </div>
+
+    <div id="status"></div>
   </div>
+
+  <script>
+    // ─── Bridge: send the Stripe session ID to the extension ─────────────────
+    //
+    // Stripe appends ?session_id=cs_xxx to this page's URL after checkout.
+    // We post it as a message so content.js (injected by the extension into
+    // every page) can catch it and store it for the popup to claim.
+
+    (function() {
+      var sessionId = new URLSearchParams(window.location.search).get('session_id');
+
+      if (!sessionId) {
+        document.getElementById('status').textContent =
+          'No session ID found in URL. Tokens will credit when you next open the popup.';
+        return;
+      }
+
+      // Post the message — content.js listens for this on every page
+      window.postMessage({ type: 'EUDAIMONIA_PURCHASE', sessionId: sessionId }, '*');
+
+      document.getElementById('status').textContent =
+        '✓ Extension notified — open the popup to see your tokens.';
+
+      // Clean the session ID out of the URL so it's not visible or bookmarkable
+      try {
+        var cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } catch (e) {
+        // replaceState not available in some contexts, not critical
+      }
+    })();
+  </script>
 </body>
 </html>
+
