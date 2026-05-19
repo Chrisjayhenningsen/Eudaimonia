@@ -147,28 +147,26 @@
     // every page) can catch it and store it for the popup to claim.
 
     (function() {
-      var sessionId = new URLSearchParams(window.location.search).get('session_id');
+  var sessionId = new URLSearchParams(window.location.search).get('session_id');
 
-      if (!sessionId) {
-        document.getElementById('status').textContent =
-          'No session ID found in URL. Tokens will credit when you next open the popup.';
-        return;
-      }
+  if (!sessionId) {
+    document.getElementById('status').textContent =
+      'No session ID found in URL. Tokens will credit when you next open the popup.';
+    return;
+  }
 
-      // Post the message — content.js listens for this on every page
-      window.postMessage({ type: 'EUDAIMONIA_PURCHASE', sessionId: sessionId }, '*');
+  // Wait 1.5s for content.js to finish injecting before posting
+  setTimeout(function() {
+    window.postMessage({ type: 'EUDAIMONIA_PURCHASE', sessionId: sessionId }, '*');
+    document.getElementById('status').textContent =
+      '✓ Extension notified — open the popup to see your tokens.';
+  }, 1500);
 
-      document.getElementById('status').textContent =
-        '✓ Extension notified — open the popup to see your tokens.';
-
-      // Clean the session ID out of the URL so it's not visible or bookmarkable
-      try {
-        var cleanUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
-      } catch (e) {
-        // replaceState not available in some contexts, not critical
-      }
-    })();
+  // Clean session ID from URL immediately
+  try {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } catch(e) {}
+  })();
   </script>
 </body>
 </html>
