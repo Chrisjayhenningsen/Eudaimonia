@@ -1,12 +1,15 @@
 // Creates a Stripe Checkout Session for a token top-up.
 //
-// CHANGE FROM CURRENT VERSION: requires the caller's Firebase ID token and
-// stamps their uid into the session metadata, so stripe-webhook.js knows which
-// user's balance to credit. The price stays server-side (STRIPE_PRICE_ID), so
-// the client can never set its own price.
+// The buyer is on the website (which has no Firebase login), so the extension
+// passes its uid to the purchase page and the page forwards it here. We stamp
+// that uid into the session metadata so stripe-webhook.js knows whose balance
+// to credit. Passing an unverified uid is safe: tokens are only ever minted on
+// a real, Stripe-verified payment, so nobody can get free tokens this way — at
+// most someone pays to credit a uid. The price stays server-side
+// (STRIPE_PRICE_ID), so the client can never set its own price.
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { json, preflight, uidFromRequest } = require('./_admin');
+const { json, preflight } = require('./_admin');
 
 exports.handler = async (event) => {
   const pre = preflight(event);
@@ -16,17 +19,15 @@ exports.handler = async (event) => {
     return json(405, { error: 'Method not allowed' });
   }
 
-  const uid = await uidFromRequest(event);
-  if (!uid) return json(401, { error: 'Sign in required' });
-
-  let quantity;
+  let quantity, uid;
   try {
-    ({ quantity } = JSON.parse(event.body));
+    ({ quantity, uid } = JSON.parse(event.body));
     quantity = Math.max(4, Math.min(10000, parseInt(quantity)));
   } catch (e) {
     return json(400, { error: 'Invalid request body' });
   }
   if (!Number.isFinite(quantity)) return json(400, { error: 'Invalid quantity' });
+  if (!uid || typeof uid !== 'string') return json(400, { error: 'Missing uid' });
 
   try {
     const session = await stripe.checkout.sessions.create({
