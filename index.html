@@ -659,10 +659,19 @@
     updatePrice();
 
     // Checkout
+    // The extension opens this page as /?uid=<uid>#purchase so we know whose
+    // token balance to credit after payment.
+    const buyerUid = new URLSearchParams(window.location.search).get('uid');
+
     document.getElementById('buyBtn').addEventListener('click', async () => {
       const qty = Math.max(4, parseInt(qtyInput.value) || 4);
       const statusEl = document.getElementById('purchase-status');
       const btn = document.getElementById('buyBtn');
+
+      if (!buyerUid) {
+        statusEl.textContent = 'Please open this page from the Eudaimonia extension (click your token balance) so we can credit your account.';
+        return;
+      }
 
       btn.disabled = true;
       btn.querySelector('span').textContent = 'Creating checkout...';
@@ -672,7 +681,7 @@
         const res = await fetch('/.netlify/functions/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quantity: qty })
+          body: JSON.stringify({ quantity: qty, uid: buyerUid })
         });
 
         const data = await res.json();
