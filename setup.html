@@ -232,16 +232,24 @@
         </div>
         
         <div style="background: #f0f7ff; border: 2px solid #4a9eff; border-radius: 8px; padding: 20px; margin: 30px 0;">
-          <h3 style="font-size: 16px; margin: 0 0 10px 0;">🎁 Completion Rewards</h3>
+          <h3 style="font-size: 16px; margin: 0 0 10px 0;">🎁 Completion Reward</h3>
           <p style="font-size: 14px; margin: 0; color: #333;">
-            Finish setup and earn <strong>12 tokens</strong> + <strong>6 invites</strong> to get started!
+            Finish setup and earn <strong>12 tokens</strong> to get started!
           </p>
+        </div>
+
+        <div style="text-align: left;" id="inviteCodeSection">
+          <label class="goal-type-label" for="inviteCode">
+            Have an invite code? <span style="font-weight: 400; color: #999;">(optional)</span>
+          </label>
+          <input type="text" id="inviteCode" placeholder="EUDA-XXXX" style="text-transform: uppercase;" />
+          <p id="inviteCodeStatus" style="font-size: 13px; margin: -6px 0 0; display: none;"></p>
         </div>
       </div>
     </div>
     
     <!-- Step 1: Long Term Goals -->
-    <div class="step" id="step1">
+    <div class="step active" id="step1">
       <h2>Long Term Goals</h2>
       <p>These are your aspirations and positive goals. What was your childhood ambition? What does self-actualization look like for you? What are you doing when you feel most alive?</p>
       <textarea id="moveToward" placeholder="Take a moment to think about what you want the world to help you move towards. This can be as specific or high level as you like."></textarea>
@@ -292,11 +300,6 @@
         <option value="18:00">6:00 PM</option>
         <option value="21:00" selected>9:00 PM</option>
       </select>
-
-      <label class="goal-type-label" style="margin-top:20px;">Got an invite code? <span style="font-weight:400;color:#999;">(optional)</span></label>
-      <input type="text" id="inviteCode" placeholder="e.g. EUDA-X7K2"
-        style="text-transform:uppercase;letter-spacing:2px;">
-      <div id="inviteCodeStatus" style="font-size:12px;margin-top:6px;display:none;"></div>
     </div>
     
     <!-- Completion -->
@@ -309,16 +312,12 @@
       <div class="reward-box">
         <div class="reward-item">
           <span>Tokens</span>
-          <span class="reward-value" id="finalTokenCount">10</span>
-        </div>
-        <div class="reward-item">
-          <span>Invites</span>
-          <span class="reward-value">3</span>
+          <span class="reward-value" id="finalTokenCount">12</span>
         </div>
       </div>
       
       <p style="text-align: center; color: #666; font-size: 14px; margin-top: 20px;">
-        Use tokens to recommend products to other users. Share invites to grow the community.
+        Use tokens to promote products aligned with your goals — top up anytime from the popup.
       </p>
     </div>
     

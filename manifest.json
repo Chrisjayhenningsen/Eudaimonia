@@ -1,14 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Eudaimonia",
-  "version": "0.1.0",
+  "version": "0.7.3",
   "description": "Track your goals and earn tokens for aligned promotions",
   
   "permissions": [
     "storage",
     "contextMenus",
     "activeTab",
-    "scripting"
+    "scripting",
+    "notifications",
+    "alarms"
   ],
   
   "host_permissions": [
@@ -48,5 +50,9 @@
       "resources": ["Eudaimonia_logo.png"],
       "matches": ["<all_urls>"]
     }
-  ]
+	
+  ],
+  "content_security_policy": {
+  "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://safebrowsing.googleapis.com https://eudaimonia-project.netlify.app;"
+}
 }

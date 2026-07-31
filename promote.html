@@ -252,26 +252,18 @@
   <p class="subtitle">Share products and services aligned with the community's goals</p>
   
   <div class="token-display">
-    <div style="display: flex; gap: 20px; justify-content: center;">
-      <div>
-        <div class="token-count" id="tokenCount">0</div>
-        <div class="token-label">Tokens Available</div>
-      </div>
-      <div>
-        <div class="token-count" id="inviteCount" style="color: #ff69b4;">0</div>
-        <div class="token-label">Invites Left</div>
-      </div>
+    <div>
+      <div class="token-count" id="tokenCount">0</div>
+      <div class="token-label">Tokens Available</div>
     </div>
   </div>
   
   <div class="info-box">
     <p><strong>How it works:</strong></p>
-    <p>• Your <strong>first promotion ever</strong> requires 1 invite (anti-spam)</p>
-    <p>• After that, promoting is free! (just costs tokens)</p>
-    <p>• First time promoting any link: <strong>1 token</strong></p>
-    <p>• Re-promoting your own link: <strong>2 tokens</strong></p>
-    <p>• Each click depletes your promotion's budget by 1</p>
-    <p>• Earn invites through check-ins to give to others!</p>
+    <p>• Every promotion costs <strong>1 token</strong> — new link or repeat, same price</p>
+    <p>• Your first-ever submission needs a quick email check (anti-spam only — see below)</p>
+    <p>• Each click depletes your promotion's budget by 1 — top up anytime from Advertiser Insights</p>
+    <p>• Promoting a link for the first time? You'll get the option to loop in the site's owner</p>
   </div>
   
   <div class="field-group">
@@ -304,6 +296,28 @@
       <span class="hint">(Comma-separated, for matching with user goals)</span>
     </label>
     <input type="text" id="promoKeywords" placeholder="e.g., productivity, writing, focus, creativity" />
+  </div>
+
+  <div class="field-group" id="verifyEmailGroup" style="display: none;">
+    <label>
+      Verify your email
+      <span class="hint">(first submission only — anti-spam)</span>
+    </label>
+    <input type="email" id="promoterEmail" placeholder="you@example.com" />
+    <p style="font-size: 12px; color: #999; margin: 6px 0 0; line-height: 1.4;">
+      We store only a one-way cryptographic hash of this address — enough to confirm you're a real, unique
+      person, never enough to recover your email or connect it to your goals or anything else you've entered.
+    </p>
+  </div>
+
+  <div class="field-group" id="ownerInviteGroup" style="display: none;">
+    <div style="background: #f0f7ff; border: 2px solid #4a9eff; border-radius: 8px; padding: 15px;">
+      <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #333; line-height: 1.5; margin: 0; cursor: pointer;">
+        <input type="checkbox" id="ownerInviteToggle" checked
+               style="width: 16px; height: 16px; min-width: 16px; padding: 0; margin: 2px 0 0; flex: 0 0 auto;" />
+        <span>💌 <strong>Invite the site owner.</strong> Looks like a link you haven't promoted before — if it belongs to someone else, leave this checked and a pre-written invitation email will open when you submit. You just add their address and send.</span>
+      </label>
+    </div>
   </div>
   
   <div id="costDisplay" style="display: none;"></div>

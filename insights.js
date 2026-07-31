@@ -63,12 +63,18 @@ async function loadMyPromotionStats() {
       const firebaseData = await response.json();
       const allPromotions = firebaseData.documents || [];
       
-      // Match my submitted URLs to Firebase promotions
+      const user = await storage.ensureAuth();
+      const myUid = user?.uid || null;
+
+      // Match my promotions by owner userId (robust), falling back to a URL
+      // match for older promotions created before userId was recorded.
       const myUrls = myPromotions.map(p => normalizeUrl(p.url));
       const myFirebasePromos = allPromotions
         .map(doc => {
           const fields = doc.fields;
           return {
+            id: doc.name.split('/').pop(),
+            userId: fields.userId?.stringValue || '',
             url: fields.url?.stringValue || '',
             title: fields.title?.stringValue || '',
             clicks: parseInt(fields.clicks?.integerValue || '0'),
@@ -77,7 +83,7 @@ async function loadMyPromotionStats() {
             timestamp: fields.timestamp?.stringValue || ''
           };
         })
-        .filter(promo => myUrls.includes(normalizeUrl(promo.url)));
+        .filter(promo => (myUid && promo.userId === myUid) || myUrls.includes(normalizeUrl(promo.url)));
       
       if (myFirebasePromos.length === 0) {
         statsContainer.innerHTML = `
@@ -109,7 +115,7 @@ async function loadMyPromotionStats() {
                 : `<span style="color: #51cf66; font-size: 12px;">✅ ${promo.budget} token${promo.budget !== 1 ? 's' : ''} remaining</span>`
               }
             </div>
-            <button class="add-tokens-btn" data-promo-url="${escapeHtml(promo.url)}" style="margin-top: 10px; padding: 8px 12px; background: #4a9eff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+            <button class="add-tokens-btn" data-promo-id="${promo.id}" style="margin-top: 10px; padding: 8px 12px; background: #4a9eff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
               + Add More Tokens
             </button>
           </div>
@@ -118,7 +124,7 @@ async function loadMyPromotionStats() {
       
       // Add click handlers for token top-up buttons
       document.querySelectorAll('.add-tokens-btn').forEach(btn => {
-        btn.addEventListener('click', () => handleAddTokens(btn.dataset.promoUrl));
+        btn.addEventListener('click', () => handleAddTokens(btn.dataset.promoId));
       });
       
     } catch (error) {
@@ -133,85 +139,48 @@ async function loadMyPromotionStats() {
   });
 }
 
-async function handleAddTokens(promoUrl) {
-  // Get current token balance
-  chrome.storage.sync.get(['tokens'], async (data) => {
-    const currentTokens = data.tokens || 0;
-    
-    if (currentTokens < 1) {
-      alert('You don\'t have any tokens to add. Complete check-ins to earn more!');
-      return;
-    }
-    
-    // Prompt for number of tokens
-    const tokensToAdd = prompt(
-      `How many tokens would you like to add to this promotion?\n\nYou have ${currentTokens} tokens available.`,
-      '2'
-    );
-    
-    if (!tokensToAdd) return; // User cancelled
-    
-    const amount = parseInt(tokensToAdd);
-    
-    if (isNaN(amount) || amount < 1) {
-      alert('Please enter a valid number of tokens (minimum 1).');
-      return;
-    }
-    
-    if (amount > currentTokens) {
-      alert(`You only have ${currentTokens} tokens available. Please enter a smaller amount.`);
-      return;
-    }
-    
-    try {
-      // Find the promotion in Firebase
-      const FIREBASE_PROJECT_ID = 'eudaimonia-350ce';
-      const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
-      
-      const response = await fetch(`${FIRESTORE_URL}/promotions`);
-      const firebaseData = await response.json();
-      const allPromotions = firebaseData.documents || [];
-      
-      // Find matching promotion
-      const targetPromo = allPromotions.find(doc => {
-        const url = doc.fields.url?.stringValue || '';
-        return normalizeUrl(url) === normalizeUrl(promoUrl);
-      });
-      
-      if (!targetPromo) {
-        alert('Could not find this promotion in the database.');
-        return;
-      }
-      
-      // Get current budget and update it
-      const promoId = targetPromo.name.split('/').pop();
-      const currentBudget = parseInt(targetPromo.fields.budget?.integerValue || '0');
-      const newBudget = currentBudget + amount;
-      
-      // Update promotion budget
-      await fetch(`${FIRESTORE_URL}/promotions/${promoId}?updateMask.fieldPaths=budget`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fields: {
-            budget: { integerValue: newBudget.toString() }
-          }
-        })
-      });
-      
-      // Deduct tokens from user
-      chrome.storage.sync.set({ tokens: currentTokens - amount }, () => {
-        alert(`✅ Successfully added ${amount} token${amount !== 1 ? 's' : ''} to this promotion!\n\nNew budget: ${newBudget} tokens\nYour remaining tokens: ${currentTokens - amount}`);
-        
-        // Reload stats
-        loadMyPromotionStats();
-      });
-      
-    } catch (error) {
-      console.error('Error adding tokens:', error);
-      alert('Failed to add tokens. Please try again.');
-    }
-  });
+async function handleAddTokens(promoId) {
+  const currentTokens = await storage.getBalance();
+
+  if (currentTokens < 1) {
+    alert('You don\'t have any tokens to add. Complete check-ins to earn more!');
+    return;
+  }
+
+  const tokensToAdd = prompt(
+    `How many tokens would you like to add to this promotion?\n\nYou have ${currentTokens} tokens available.`,
+    '2'
+  );
+  if (!tokensToAdd) return; // User cancelled
+
+  const amount = parseInt(tokensToAdd);
+  if (isNaN(amount) || amount < 1) {
+    alert('Please enter a valid number of tokens (minimum 1).');
+    return;
+  }
+  if (amount > currentTokens) {
+    alert(`You only have ${currentTokens} tokens available. Please enter a smaller amount.`);
+    return;
+  }
+
+  try {
+    // Server-side, transactional: verifies ownership, debits the balance, and
+    // increments the promotion's budget in one atomic step.
+    const res = await storage.callFn('spend', { action: 'addBudget', promoId, amount });
+    alert(`✅ Successfully added ${amount} token${amount !== 1 ? 's' : ''} to this promotion!\n\nYour remaining tokens: ${res.balance}`);
+    loadMyPromotionStats();
+  } catch (err) {
+    const msg = err.code === 'INSUFFICIENT_TOKENS'
+        ? "You don't have enough tokens."
+      : err.code === 'NOT_OWNER'
+        ? 'You can only add tokens to your own promotions.'
+      : err.code === 'PROMO_NOT_FOUND'
+        ? 'Could not find this promotion.'
+      : err.code === 'AUTH_REQUIRED'
+        ? "Couldn't sign you in. Please check your connection and try again."
+      : 'Failed to add tokens. Please try again.';
+    alert(msg);
+  }
 }
 
 function escapeHtml(text) {

@@ -1,6 +1,8 @@
 // Firebase REST API wrapper - no SDK needed
 const FIREBASE_PROJECT_ID = 'eudaimonia-350ce';
-const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
+var FIRESTORE_URL = 'https://firestore.googleapis.com/v1/projects/eudaimonia-350ce/databases/(default)/documents';
+const FIREBASE_API_KEY = 'AIzaSyBBK2zeQBWA7Gxfb-d4XUvhk3QDdAfdpQU';
+const FUNCTIONS_BASE = 'https://eudaimonia-project.netlify.app/.netlify/functions';
 
 // Current user
 let currentUser = null;
@@ -20,6 +22,24 @@ let featureFlags = null;
 let flagsLastFetched = 0;
 const FLAGS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// ─── Email hashing ────────────────────────────────────────────────────────────
+// One-way, unsalted SHA-256 of a normalized (trimmed, lowercased) email address.
+// Unsalted is deliberate: it's what lets us later hash a DIFFERENT email (e.g.
+// during the owner-invite flow) and get the same value if it's the same address,
+// which is the whole point - we need to answer "does this address already belong
+// to a registered user?" without ever storing or transmitting the address itself.
+// The tradeoff is that a common/guessable address could theoretically be reversed
+// via a precomputed rainbow table - this is a "does this exist" anti-spam/dedup
+// check, not a secret, so that's an accepted limitation rather than a bug.
+async function hashEmail(email) {
+  const normalized = (email || '').trim().toLowerCase();
+  const encoded = new TextEncoder().encode(normalized);
+  const digest = await crypto.subtle.digest('SHA-256', encoded);
+  return Array.from(new Uint8Array(digest))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 const storage = {
   // Get current user ID
   async getCurrentUserId() {
@@ -29,12 +49,61 @@ const storage = {
     return currentUser?.uid || null;
   },
   
-  // Ensure user is authenticated (anonymous)
+  // Ensure user is authenticated (anonymous). Always routes through
+  // ensureAuthenticated so an expired in-memory token gets refreshed rather than
+  // reused — ensureAuthenticated is cheap when the stored token is still valid.
   async ensureAuth() {
-    if (!currentUser) {
-      currentUser = await ensureAuthenticated();
-    }
+    currentUser = await ensureAuthenticated();
     return currentUser;
+  },
+
+  // ─── Backend helpers ───────────────────────────────────────────────────────
+  // Calls an authenticated Netlify Function with the user's Firebase ID token.
+  // Throws an Error on failure; err.code carries the machine-readable error
+  // string from the function (e.g. 'INSUFFICIENT_TOKENS') when present.
+  async callFn(name, body) {
+    const user = await this.ensureAuth();
+    if (!user || !user.token) {
+      const e = new Error('AUTH_REQUIRED'); e.code = 'AUTH_REQUIRED'; throw e;
+    }
+    const res = await fetch(`${FUNCTIONS_BASE}/${name}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + user.token },
+      body: JSON.stringify(body || {})
+    });
+    let data; const text = await res.text();
+    try { data = JSON.parse(text); } catch (e) { data = { error: text }; }
+    if (!res.ok) {
+      const err = new Error(data.error || ('HTTP ' + res.status));
+      err.status = res.status; err.code = data.error;
+      throw err;
+    }
+    return data;
+  },
+
+  // Reads the canonical token balance from Firestore (users/{uid}). Falls back
+  // to the last cached value for display if auth/network is unavailable.
+  async getBalance() {
+    try {
+      const user = await this.ensureAuth();
+      if (!user || !user.uid || !user.token) return await this._cachedBalance();
+      const res = await fetch(`${FIRESTORE_URL}/users/${user.uid}`, {
+        headers: { 'Authorization': 'Bearer ' + user.token }
+      });
+      if (!res.ok) return await this._cachedBalance();
+      const data = await res.json();
+      const tokens = parseInt(data.fields?.tokens?.integerValue || '0');
+      chrome.storage.local.set({ cachedBalance: tokens });
+      return tokens;
+    } catch (e) {
+      return await this._cachedBalance();
+    }
+  },
+
+  _cachedBalance() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['cachedBalance'], (d) => resolve(d.cachedBalance || 0));
+    });
   },
   
   // Get feature flags from Firebase (cached)
@@ -125,94 +194,94 @@ const storage = {
     return { blocked: false };
   },
 
-  // Save promotion to Firestore using REST API
-  async savePromotion(promotion) {
+  // Records that a hashed email address belongs to a registered user. Called
+  // once, on a user's first-ever promotion. The document ID IS the hash, and
+  // the only other field is a timestamp - there is nothing here to link back
+  // to a person's goals, promotions, or any other profile data, and no way to
+  // recover the original address from the hash.
+  async registerEmailHash(email) {
     try {
-      // Get current user (optional - will work without if auth disabled)
-      let userId = null;
-      try {
-        const user = await this.ensureAuth();
-        userId = user?.uid;
-      } catch (authError) {
-        console.log('Auth not available, submitting without userId');
-      }
-      
-      // Check if this is user's FIRST promotion ever (anti-spam gate)
-      const isFirstPromotion = await new Promise((resolve) => {
-        chrome.storage.sync.get(['myPromotions', 'invites'], (data) => {
-          const myPromotions = data.myPromotions || [];
-          const invites = data.invites || 0;
-          
-          const isFirst = myPromotions.length === 0;
-          const hasInvite = invites > 0;
-          
-          if (isFirst && !hasInvite) {
-            alert('You need an invite to submit your first promotion. Earn more by completing check-ins!');
-            resolve('NO_INVITE');
-          } else {
-            resolve(isFirst);
+      const hash = await hashEmail(email);
+      await fetch(`${FIRESTORE_URL}/emailHashes/${hash}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fields: {
+            registered: { booleanValue: true },
+            createdAt: { stringValue: new Date().toISOString() }
           }
-        });
+        })
       });
-      
-      if (isFirstPromotion === 'NO_INVITE') {
-        return false;
-      }
-      
-      // Add userId to promotion if available
-      if (userId) {
-        promotion.userId = userId;
-      }
-      
-      // Build fields object
-      const fields = {
-        url: { stringValue: promotion.url },
-        title: { stringValue: promotion.title },
-        description: { stringValue: promotion.description },
-        keywords: { 
-          arrayValue: { 
-            values: promotion.keywords.map(k => ({ stringValue: k }))
-          }
-        },
-        timestamp: { stringValue: promotion.timestamp },
-        cost: { integerValue: promotion.cost.toString() },
-        budget: { integerValue: (promotion.budget || promotion.cost).toString() },
-        clicks: { integerValue: '0' }
-      };
-      
-      // Add userId if we have it
-      if (userId) {
-        fields.userId = { stringValue: userId };
-      }
-      
-      const response = await fetch(`${FIRESTORE_URL}/promotions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fields })
+    } catch (error) {
+      // Non-critical - worst case, a returning user gets asked to verify again,
+      // or an already-registered address gets invited once more. Never block
+      // the promotion submission over this.
+      console.log('Could not register email hash (non-critical):', error.message);
+    }
+  },
+
+  // Checks whether a (plaintext, never transmitted) email address already
+  // belongs to a registered user, by hashing it the same way and looking up
+  // the resulting document. Used by the owner-invite flow to silently skip
+  // sending an invite to someone who's already using the product - the
+  // inviter never learns the result either way, they just don't see a
+  // compose-email tab open for an address that's already registered.
+  async isEmailRegistered(email) {
+    try {
+      const hash = await hashEmail(email);
+      const response = await fetch(`${FIRESTORE_URL}/emailHashes/${hash}`);
+      return response.ok;
+    } catch (error) {
+      console.log('Could not check email hash, failing open (will send invite):', error.message);
+      return false; // fail open - a missed dedup is far less bad than a blocked flow
+    }
+  },
+
+  // Registers a client-generated invite code in Firestore. Deliberately
+  // split from generateInviteCode(): the CODE ITSELF is produced
+  // synchronously, client-side, with no network call at all (see
+  // generateLocalInviteCode in promote.js) - that's what lets a mailto:
+  // invite open immediately in the same click as Submit, the way a plain
+  // synchronous assignment would. This function only registers that
+  // already-generated code so it's actually redeemable later; callers are
+  // expected to call it fire-and-forget (not awaited) after the mail draft
+  // has already been opened, since nothing about showing the invite depends
+  // on this write having finished yet.
+  async registerGeneratedInviteCode(code) {
+    try {
+      await this.callFn('invites', { action: 'register', code });
+    } catch (error) {
+      console.log('Eudaimonia: could not register invite code (non-critical):', error.message);
+    }
+  },
+
+  // Save promotion to Firestore using REST API
+  // isFirstPromotion: whether this is the user's first-ever submission (determined
+  // by the caller from local myPromotions) - if true and an email was provided,
+  // we register a one-way hash of it as the anti-spam check.
+  // email: only ever used here to derive a hash - the plaintext never leaves the
+  // browser and is never written to Firestore in any form.
+  // Submits a promotion by spending 1 token, server-side. The backend
+  // (spend function) verifies the user, recomputes the cost, checks the
+  // balance, and creates the promotion + debits the balance in one
+  // transaction. Returns { success, balance, promoId } or { success:false, error }.
+  // NOTE: the first-promotion email-hash anti-spam record is deferred to the
+  // fast-follow backend pass; the client still enforces a valid email in the UI.
+  async savePromotion(promotion, isFirstPromotion, email) {
+    try {
+      const result = await this.callFn('spend', {
+        action: 'promote',
+        url: promotion.url,
+        title: promotion.title,
+        description: promotion.description,
+        keywords: promotion.keywords,
+        email: email || '',
+        isFirstPromotion: !!isFirstPromotion
       });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Firebase error:', errorText);
-        alert('Failed to submit promotion. Please try again or check console for details.');
-        return false;
-      }
-      
-      // Only deduct invite if this was the FIRST promotion
-      if (isFirstPromotion === true) {
-        chrome.storage.sync.get(['invites'], (data) => {
-          const invites = data.invites || 0;
-          chrome.storage.sync.set({ invites: Math.max(0, invites - 1) });
-        });
-      }
-      
-      return true;
+      return { success: true, balance: result.balance, promoId: result.promoId };
     } catch (error) {
       console.error('Error saving promotion:', error);
-      alert('Error: ' + error.message);
-      return false;
+      return { success: false, error: error.code || error.message };
     }
   },
   
@@ -293,65 +362,22 @@ const storage = {
   // Redeem an invite code during setup
   // Returns { success, error } 
   // On success: awards 2 tokens to invitee, 6 to inviter
+  // Redeems an invite code server-side. The invites function validates the code,
+  // marks it used once, and credits both the invitee (+2) and inviter (+6) to
+  // their Firestore balances in a single transaction. Rewards are defined by the
+  // backend, not here.
   async redeemInviteCode(code) {
     try {
-      const cleanCode = code.trim().toUpperCase();
-
-      // Fetch the invite document
-      const response = await fetch(`${FIRESTORE_URL}/invites/${cleanCode}`);
-      if (!response.ok) {
-        return { success: false, error: 'Invite code not found. Please check and try again.' };
-      }
-
-      const data = await response.json();
-      const fields = data.fields || {};
-
-      if (fields.used?.booleanValue === true) {
-        return { success: false, error: 'This invite code has already been used.' };
-      }
-
-      const inviterUserId = fields.createdBy?.stringValue;
-
-      // Mark code as used
-      await fetch(`${FIRESTORE_URL}/invites/${cleanCode}?updateMask.fieldPaths=used&updateMask.fieldPaths=usedAt`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fields: {
-            used: { booleanValue: true },
-            usedAt: { stringValue: new Date().toISOString() }
-          }
-        })
-      });
-
-      // Award 2 bonus tokens to the invitee (locally)
-      await new Promise(resolve => {
-        chrome.storage.sync.get(['tokens'], (d) => {
-          chrome.storage.sync.set({ tokens: (d.tokens || 0) + 2 }, resolve);
-        });
-      });
-
-      // Award 6 bonus tokens to the inviter (in Firebase user doc)
-      if (inviterUserId && inviterUserId !== 'anonymous') {
-        const inviterUrl = `${FIRESTORE_URL}/users/${inviterUserId}`;
-        const inviterRes = await fetch(inviterUrl);
-        if (inviterRes.ok) {
-          const inviterData = await inviterRes.json();
-          const currentTokens = parseInt(inviterData.fields?.tokens?.integerValue || '0');
-          await fetch(`${inviterUrl}?updateMask.fieldPaths=tokens`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              fields: { tokens: { integerValue: (currentTokens + 6).toString() } }
-            })
-          });
-        }
-      }
-
+      await this.callFn('invites', { action: 'redeem', code });
       return { success: true };
     } catch (error) {
-      console.error('Error redeeming invite code:', error);
-      return { success: false, error: 'Something went wrong. Please try again.' };
+      const map = {
+        CODE_NOT_FOUND: 'Invite code not found. Please check and try again.',
+        CODE_USED: 'This invite code has already been used.',
+        SELF_REDEEM: "You can't redeem your own invite code.",
+        AUTH_REQUIRED: "Couldn't sign you in. Please check your connection and try again."
+      };
+      return { success: false, error: map[error.code] || 'Something went wrong. Please try again.' };
     }
   }
 };
@@ -360,16 +386,49 @@ const storage = {
 async function ensureAuthenticated() {
   // Check if we have a stored auth token
   return new Promise((resolve) => {
-    chrome.storage.local.get(['authToken', 'userId', 'tokenExpiry'], async (data) => {
+    chrome.storage.local.get(['authToken', 'userId', 'tokenExpiry', 'refreshToken'], async (data) => {
       const now = Date.now();
-      
-      // If we have a valid token, use it
+
+      // 1. Valid, unexpired token → reuse it.
       if (data.authToken && data.userId && data.tokenExpiry && data.tokenExpiry > now) {
         resolve({ uid: data.userId, token: data.authToken });
         return;
       }
-      
-      // Otherwise, sign in anonymously
+
+      // 2. Expired but we have a refresh token → refresh WITHOUT changing uid.
+      //    Firebase ID tokens last only ~1 hour; the anonymous ACCOUNT persists.
+      //    We must exchange the refresh token for a fresh ID token (same uid),
+      //    NOT sign up again (which would mint a brand-new user and orphan the
+      //    existing token balance).
+      if (data.refreshToken && data.userId) {
+        try {
+          const r = await fetch(
+            `https://securetoken.googleapis.com/v1/token?key=${FIREBASE_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(data.refreshToken)}`
+            }
+          );
+          const rd = await r.json();
+          if (rd.id_token) {
+            const expiry = now + (parseInt(rd.expires_in || '3600', 10) * 1000);
+            chrome.storage.local.set({
+              authToken: rd.id_token,
+              userId: rd.user_id,
+              refreshToken: rd.refresh_token,
+              tokenExpiry: expiry
+            });
+            resolve({ uid: rd.user_id, token: rd.id_token });
+            return;
+          }
+          console.warn('Token refresh returned no id_token; falling back to sign-in:', rd);
+        } catch (e) {
+          console.log('Token refresh failed, will try a fresh sign-in:', e.message);
+        }
+      }
+
+      // 3. No stored account (or refresh failed) → sign up a new anonymous user.
       try {
         const response = await fetch(
           `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
@@ -379,24 +438,26 @@ async function ensureAuthenticated() {
             body: JSON.stringify({ returnSecureToken: true })
           }
         );
-        
+
         const authData = await response.json();
-        
+
         if (authData.idToken) {
           const userId = authData.localId;
           const token = authData.idToken;
-          const expiry = now + (3600 * 1000); // 1 hour
-          
-          // Store auth data
+          const expiry = now + (parseInt(authData.expiresIn || '3600', 10) * 1000);
+
+          // Store auth data, INCLUDING the refresh token so future expiries
+          // refresh in place rather than creating a new user.
           chrome.storage.local.set({
             authToken: token,
             userId: userId,
+            refreshToken: authData.refreshToken,
             tokenExpiry: expiry
           });
-          
+
           // Initialize user document in Firestore
           await initializeUserDocument(userId);
-          
+
           resolve({ uid: userId, token: token });
         } else {
           console.error('Auth failed:', authData);
@@ -559,4 +620,3 @@ function isCommonWord(word) {
   ]);
   return commonWords.has(word);
 }
-

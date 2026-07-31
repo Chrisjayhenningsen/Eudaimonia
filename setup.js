@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (data.setupComplete) {
       isEditing = true;
       loadExistingData();
+      // The invite-code redemption field only ever does anything for a
+      // brand-new setup (see completeSetup's isEditing branch below) - hide
+      // it for returning users editing their profile so it doesn't look
+      // like a live control that silently does nothing.
+      const inviteSection = document.getElementById('inviteCodeSection');
+      if (inviteSection) inviteSection.style.display = 'none';
     }
   });
   
@@ -29,22 +35,19 @@ function loadExistingData() {
     'checkinDay',
     'checkinTime'
   ], function(data) {
-    // Populate form fields with existing data
     if (data.moveToward) document.getElementById('moveToward').value = data.moveToward;
     if (data.moveAway) document.getElementById('moveAway').value = data.moveAway;
     if (data.dailyHabits) document.getElementById('dailyHabits').value = data.dailyHabits;
     if (data.productCategories) document.getElementById('productCategories').value = data.productCategories;
-    if (data.checkinDay) document.getElementById('checkinDay').value = data.checkinDay;
+    if (data.checkinDay !== undefined) document.getElementById('checkinDay').value = data.checkinDay;
     if (data.checkinTime) document.getElementById('checkinTime').value = data.checkinTime;
   });
 }
 
 function handleNext() {
   if (currentStep === totalSteps) {
-    // On last step, save everything and complete setup
     completeSetup();
   } else {
-    // Move to next step
     currentStep++;
     showStep(currentStep);
     updateProgress();
@@ -60,12 +63,10 @@ function handleBack() {
 }
 
 function showStep(stepNum) {
-  // Hide all steps
   document.querySelectorAll('.step').forEach(step => {
     step.classList.remove('active');
   });
   
-  // Show welcome screen (step 0)
   if (stepNum === 0) {
     document.getElementById('stepWelcome').classList.add('active');
     document.getElementById('backBtn').style.display = 'none';
@@ -73,20 +74,16 @@ function showStep(stepNum) {
     return;
   }
   
-  // Show current step
   if (stepNum <= totalSteps) {
     document.getElementById('step' + stepNum).classList.add('active');
   } else {
     document.getElementById('stepComplete').classList.add('active');
   }
   
-  // Update buttons
   const backBtn = document.getElementById('backBtn');
   const nextBtn = document.getElementById('nextBtn');
   
-  if (stepNum === 1) {
-    backBtn.style.display = 'block'; // Can go back to welcome
-  } else if (stepNum > 1) {
+  if (stepNum >= 1) {
     backBtn.style.display = 'block';
   }
   
@@ -103,7 +100,6 @@ function updateProgress() {
   const dots = document.querySelectorAll('.progress-dot');
   const progressContainer = document.getElementById('progress');
   
-  // Hide progress on welcome screen
   if (currentStep === 0) {
     progressContainer.style.display = 'none';
     return;
@@ -122,7 +118,6 @@ function updateProgress() {
 }
 
 async function completeSetup() {
-  // Gather all the data
   const setupData = {
     moveToward: document.getElementById('moveToward').value.trim(),
     moveAway: document.getElementById('moveAway').value.trim(),
@@ -134,85 +129,90 @@ async function completeSetup() {
   };
   
   if (isEditing) {
-    // If editing, just save the updates and go back to popup
-    chrome.storage.sync.set(setupData, function() {
-      // Update keyword aggregation
+    chrome.storage.sync.set(setupData, async function() {
+      // MUST be awaited: this does two sequential Firestore calls. Without
+      // awaiting, the window.location.href navigation below fires almost
+      // immediately after, destroying this page's JS context and silently
+      // killing the aggregation before it completes - it was never
+      // reaching Firestore at all on profile edits before this fix.
       if (typeof aggregateUserKeywords === 'function') {
-        aggregateUserKeywords(setupData);
+        await aggregateUserKeywords(setupData);
       }
+      // Reschedule alarm with potentially updated schedule
+      chrome.runtime.sendMessage({
+        action: 'scheduleCheckinReminder',
+        day: setupData.checkinDay,
+        time: setupData.checkinTime
+      });
       window.location.href = 'popup.html';
     });
   } else {
-    // If new setup, award base tokens and invites
-    setupData.tokens = 10;
-    setupData.invites = 3;
     setupData.setupDate = new Date().toISOString();
 
-    // Try to redeem invite code if provided
     const inviteCodeInput = document.getElementById('inviteCode');
     const inviteCode = inviteCodeInput ? inviteCodeInput.value.trim() : '';
     const statusEl = document.getElementById('inviteCodeStatus');
 
-    async function finishSetup(bonusTokens) {
-      setupData.tokens += bonusTokens;
-
-      chrome.storage.sync.set(setupData, function() {
-        if (typeof aggregateUserKeywords === 'function') {
-          aggregateUserKeywords(setupData);
-        }
-
-        // Update completion screen token count
-        const finalCount = document.getElementById('finalTokenCount');
-        if (finalCount) {
-          finalCount.textContent = setupData.tokens;
-          if (bonusTokens > 0) {
-            finalCount.insertAdjacentHTML('afterend',
-              `<div style="font-size:12px;color:#51cf66;margin-top:4px;">includes ${bonusTokens} invite bonus 🎉</div>`
-            );
-          }
-        }
-
-        currentStep = totalSteps + 1;
-        showStep(currentStep);
-        updateProgress();
-
-        const nextBtn = document.getElementById('nextBtn');
-        nextBtn.onclick = function() {
-          window.location.href = 'popup.html';
-        };
-      });
-    }
-
-    if (inviteCode) {
-      // Show checking state
-      if (statusEl) {
-        statusEl.textContent = 'Checking invite code...';
-        statusEl.style.color = '#666';
-        statusEl.style.display = 'block';
+    // Save the profile locally. Tokens are NOT stored locally anymore — the
+    // balance is canonical in Firestore and granted server-side.
+    chrome.storage.sync.set(setupData, async function() {
+      if (typeof aggregateUserKeywords === 'function') {
+        await aggregateUserKeywords(setupData);
       }
 
-      // Disable Next button while checking
-      document.getElementById('nextBtn').disabled = true;
+      // Schedule the check-in reminder alarm
+      chrome.runtime.sendMessage({
+        action: 'scheduleCheckinReminder',
+        day: setupData.checkinDay,
+        time: setupData.checkinTime
+      });
 
-      const result = await storage.redeemInviteCode(inviteCode);
+      // Grant the one-time onboarding tokens server-side (idempotent per user).
+      try {
+        await storage.callFn('claim-onboarding', {});
+      } catch (e) {
+        console.warn('Eudaimonia: onboarding grant failed (non-fatal):', e?.message);
+      }
 
-      document.getElementById('nextBtn').disabled = false;
-
-      if (result.success) {
-        // 2 bonus tokens for invitee (already awarded in redeemInviteCode locally,
-        // but we apply them here through setupData instead to keep it atomic)
-        finishSetup(2);
-      } else {
+      // Redeem an invite code if one was entered (server credits both parties).
+      let inviteOk = false;
+      if (inviteCode) {
         if (statusEl) {
+          statusEl.textContent = 'Checking invite code...';
+          statusEl.style.color = '#666';
+          statusEl.style.display = 'block';
+        }
+        document.getElementById('nextBtn').disabled = true;
+        const result = await storage.redeemInviteCode(inviteCode);
+        document.getElementById('nextBtn').disabled = false;
+        inviteOk = result.success;
+        if (!inviteOk && statusEl) {
           statusEl.textContent = `❌ ${result.error}`;
           statusEl.style.color = '#c92a2a';
           statusEl.style.display = 'block';
         }
-        // Still complete setup, just without bonus
-        finishSetup(0);
       }
-    } else {
-      finishSetup(0);
-    }
+
+      // Show the resulting balance, read back from the server.
+      const balance = await storage.getBalance();
+      const finalCount = document.getElementById('finalTokenCount');
+      if (finalCount) {
+        finalCount.textContent = balance;
+        if (inviteOk) {
+          finalCount.insertAdjacentHTML('afterend',
+            `<div style="font-size:12px;color:#51cf66;margin-top:4px;">includes 2 bonus tokens from your invite code 🎉</div>`
+          );
+        }
+      }
+
+      currentStep = totalSteps + 1;
+      showStep(currentStep);
+      updateProgress();
+
+      const nextBtn = document.getElementById('nextBtn');
+      nextBtn.onclick = function() {
+        window.location.href = 'popup.html';
+      };
+    });
   }
 }

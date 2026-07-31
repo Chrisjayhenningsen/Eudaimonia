@@ -17,18 +17,44 @@ function loadProfileData() {
     'checkinDay',
     'checkinTime',
     'blockedSources',
-    'blockedCategories'
+    'blockedCategories',
+    'autoBlockAds'
   ], function(data) {
     // Populate all fields
     if (data.moveToward) document.getElementById('moveToward').value = data.moveToward;
     if (data.moveAway) document.getElementById('moveAway').value = data.moveAway;
     if (data.dailyHabits) document.getElementById('dailyHabits').value = data.dailyHabits;
     if (data.productCategories) document.getElementById('productCategories').value = data.productCategories;
-    if (data.checkinDay) document.getElementById('checkinDay').value = data.checkinDay;
+    if (data.checkinDay !== undefined) document.getElementById('checkinDay').value = data.checkinDay;
     if (data.checkinTime) document.getElementById('checkinTime').value = data.checkinTime;
     
     // Load blocked items
+    loadAutoBlockAdsStatus(data.autoBlockAds === true);
     loadBlockedItems(data.blockedSources || [], data.blockedCategories || []);
+  });
+}
+
+function loadAutoBlockAdsStatus(isEnabled) {
+  const statusDiv = document.getElementById('autoBlockAdsStatus');
+  
+  if (isEnabled) {
+    statusDiv.innerHTML = `
+      <div class="blocked-item">
+        <span class="blocked-item-text">✅ Enabled — new ads are auto-replaced with the Eudaimonia badge</span>
+        <button class="unblock-btn" id="disableAutoBlockBtn">Disable</button>
+      </div>
+    `;
+    document.getElementById('disableAutoBlockBtn').addEventListener('click', () => {
+      setAutoBlockAds(false);
+    });
+  } else {
+    statusDiv.innerHTML = `<em style="color: #999;">Not enabled. Right-click any ad and choose "Block All Ads" to turn this on.</em>`;
+  }
+}
+
+function setAutoBlockAds(value) {
+  chrome.storage.sync.set({ autoBlockAds: value }, () => {
+    loadAutoBlockAdsStatus(value);
   });
 }
 
@@ -44,10 +70,16 @@ function loadBlockedItems(sources, categories) {
       const item = document.createElement('div');
       item.className = 'blocked-item';
       item.innerHTML = `
-        <span class="blocked-item-text">${source}</span>
-        <button class="unblock-btn" data-type="source" data-value="${source}">Unblock</button>
+        <span class="blocked-item-text">${escapeHtml(source)}</span>
+        <button class="unblock-btn" data-type="source" data-value="${escapeHtml(source)}">Unblock</button>
       `;
       sourcesList.appendChild(item);
+    });
+    
+    sourcesList.querySelectorAll('.unblock-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        unblockSource(this.getAttribute('data-value'));
+      });
     });
   }
   
@@ -56,42 +88,103 @@ function loadBlockedItems(sources, categories) {
   } else {
     categoriesList.innerHTML = '';
     categories.forEach(category => {
-      const item = document.createElement('div');
-      item.className = 'blocked-item';
-      item.innerHTML = `
-        <span class="blocked-item-text">${category}</span>
-        <button class="unblock-btn" data-type="category" data-value="${category}">Unblock</button>
-      `;
-      categoriesList.appendChild(item);
+      categoriesList.appendChild(buildCategoryCard(category));
     });
   }
+}
+
+// Builds a single category's card: name + unblock + an expandable keyword
+// editor, since keywords are the main lever for fixing a category that's
+// over- or under-matching once it's already in use.
+function buildCategoryCard(category) {
+  const card = document.createElement('div');
+  card.className = 'category-card';
   
-  // Add event listeners to unblock buttons
-  document.querySelectorAll('.unblock-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const type = this.getAttribute('data-type');
-      const value = this.getAttribute('data-value');
-      unblockItem(type, value);
+  const keywordsText = (category.keywords || []).join(', ');
+  
+  card.innerHTML = `
+    <div class="category-card-header">
+      <span class="category-name">${escapeHtml(category.name)}</span>
+      <div class="category-header-buttons">
+        <button class="edit-keywords-btn" data-name="${escapeHtml(category.name)}">Edit keywords</button>
+        <button class="unblock-btn" data-type="category" data-value="${escapeHtml(category.name)}">Unblock</button>
+      </div>
+    </div>
+    <div class="category-keywords-editor">
+      <label>Keywords (comma-separated) — any of these appearing in an ad's text will match this category:</label>
+      <textarea>${escapeHtml(keywordsText)}</textarea>
+      <button class="save-keywords-btn" data-name="${escapeHtml(category.name)}">Save Keywords</button>
+    </div>
+  `;
+  
+  card.querySelector('.edit-keywords-btn').addEventListener('click', function() {
+    const editor = card.querySelector('.category-keywords-editor');
+    editor.classList.toggle('show');
+  });
+  
+  card.querySelector('.unblock-btn').addEventListener('click', function() {
+    unblockCategory(this.getAttribute('data-value'));
+  });
+  
+  card.querySelector('.save-keywords-btn').addEventListener('click', function() {
+    const name = this.getAttribute('data-name');
+    const textarea = card.querySelector('.category-keywords-editor textarea');
+    saveKeywordsForCategory(name, textarea.value);
+  });
+  
+  return card;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function unblockSource(value) {
+  chrome.storage.sync.get(['blockedSources', 'blockedCategories'], function(data) {
+    const blockedSources = (data.blockedSources || []).filter(s => s !== value);
+    const blockedCategories = data.blockedCategories || [];
+    
+    chrome.storage.sync.set({ blockedSources }, function() {
+      loadBlockedItems(blockedSources, blockedCategories);
     });
   });
 }
 
-function unblockItem(type, value) {
+function unblockCategory(name) {
   chrome.storage.sync.get(['blockedSources', 'blockedCategories'], function(data) {
-    let blockedSources = data.blockedSources || [];
-    let blockedCategories = data.blockedCategories || [];
+    const blockedSources = data.blockedSources || [];
+    const blockedCategories = (data.blockedCategories || [])
+      .filter(c => c.name.toLowerCase() !== name.toLowerCase());
     
-    if (type === 'source') {
-      blockedSources = blockedSources.filter(s => s !== value);
-    } else if (type === 'category') {
-      blockedCategories = blockedCategories.filter(c => c !== value);
+    chrome.storage.sync.set({ blockedCategories }, function() {
+      loadBlockedItems(blockedSources, blockedCategories);
+    });
+  });
+}
+
+function saveKeywordsForCategory(name, rawKeywordsText) {
+  const newKeywords = rawKeywordsText
+    .split(',')
+    .map(k => k.trim().toLowerCase())
+    .filter(k => k.length > 0);
+  
+  if (newKeywords.length === 0) {
+    alert('A category needs at least one keyword to match against. Use "Unblock" instead if you want to remove this category entirely.');
+    return;
+  }
+  
+  chrome.storage.sync.get(['blockedSources', 'blockedCategories'], function(data) {
+    const blockedSources = data.blockedSources || [];
+    const blockedCategories = data.blockedCategories || [];
+    const target = blockedCategories.find(c => c.name.toLowerCase() === name.toLowerCase());
+    
+    if (target) {
+      target.keywords = newKeywords;
     }
     
-    chrome.storage.sync.set({
-      blockedSources,
-      blockedCategories
-    }, function() {
-      // Reload the blocked items display
+    chrome.storage.sync.set({ blockedCategories }, function() {
       loadBlockedItems(blockedSources, blockedCategories);
     });
   });
@@ -108,7 +201,13 @@ function saveProfile() {
   };
   
   chrome.storage.sync.set(profileData, function() {
-    // Return to main popup
+    // Tell background to reschedule (or cancel) the alarm with the new schedule
+    chrome.runtime.sendMessage({
+      action: 'scheduleCheckinReminder',
+      day: profileData.checkinDay,
+      time: profileData.checkinTime
+    });
+    
     window.location.href = 'popup.html';
   });
 }

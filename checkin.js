@@ -9,8 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadSystems() {
-  chrome.storage.sync.get(['dailyHabits', 'lastCheckin'], function(data) {
+  chrome.storage.sync.get(['dailyHabits', 'moveToward', 'lastCheckin'], function(data) {
     const systems = data.dailyHabits || '';
+    const moveToward = data.moveToward || '';
     const lastCheckin = data.lastCheckin || null;
     
     // Check if user can earn tokens this week
@@ -29,16 +30,16 @@ function loadSystems() {
     
     const systemArray = systems.split('\n').filter(s => s.trim());
     systemArray.forEach((system, index) => {
-      const systemDiv = createSystemItem(system, index);
+      const systemDiv = createSystemItem(system, index, systemArray, moveToward);
       systemsList.appendChild(systemDiv);
     });
   });
 }
 
-function createSystemItem(systemText, index) {
+function createSystemItem(systemText, index, systemArray, moveToward) {
   const div = document.createElement('div');
   div.className = 'system-item';
-  
+
   div.innerHTML = `
     <div class="system-text">${systemText}</div>
     <div class="completion-group">
@@ -52,18 +53,34 @@ function createSystemItem(systemText, index) {
       </div>
     </div>
     <div class="reflection-area" id="reflection-${index}">
-      <label class="reflection-label">What happened? How can you adjust?</label>
-      <textarea id="reflection-text-${index}" placeholder="Reflect on what got in the way and what you might change..."></textarea>
+      <span class="adjust-label">Should you adjust your goal or the way you move towards it?</span>
+      <div class="adjust-group">
+        <div class="adjust-radio" id="adjust-system-div-${index}">
+          <input type="radio" name="adjust-${index}" id="adjust-system-${index}" value="system">
+          <label for="adjust-system-${index}">🔧 Adjust my system <span style="color:#999;font-weight:400">(change how I pursue this goal)</span></label>
+        </div>
+        <div class="adjust-radio" id="adjust-goal-div-${index}">
+          <input type="radio" name="adjust-${index}" id="adjust-goal-${index}" value="goal">
+          <label for="adjust-goal-${index}">🎯 Adjust my goal <span style="color:#999;font-weight:400">(the goal itself needs rethinking)</span></label>
+        </div>
+      </div>
+      <label class="reflection-label" id="reflection-label-${index}">What would work better?</label>
+      <textarea id="reflection-text-${index}" placeholder="Describe what you'd like to change..."></textarea>
     </div>
   `;
-  
-  // Add event listeners to show/hide reflection area
+
   const completedRadio = div.querySelector(`#radio-completed-${index}`);
-  const troubleRadio = div.querySelector(`#radio-trouble-${index}`);
+  const troubleRadio   = div.querySelector(`#radio-trouble-${index}`);
   const reflectionArea = div.querySelector(`#reflection-${index}`);
-  const completedDiv = div.querySelector(`#completed-${index}`);
-  const troubleDiv = div.querySelector(`#trouble-${index}`);
-  
+  const completedDiv   = div.querySelector(`#completed-${index}`);
+  const troubleDiv     = div.querySelector(`#trouble-${index}`);
+  const adjustSystemDiv = div.querySelector(`#adjust-system-div-${index}`);
+  const adjustGoalDiv   = div.querySelector(`#adjust-goal-div-${index}`);
+  const adjustSystemRadio = div.querySelector(`#adjust-system-${index}`);
+  const adjustGoalRadio   = div.querySelector(`#adjust-goal-${index}`);
+  const reflectionLabel   = div.querySelector(`#reflection-label-${index}`);
+  const reflectionText    = div.querySelector(`#reflection-text-${index}`);
+
   completedRadio.addEventListener('change', function() {
     if (this.checked) {
       reflectionArea.classList.remove('show');
@@ -71,7 +88,7 @@ function createSystemItem(systemText, index) {
       troubleDiv.classList.remove('selected');
     }
   });
-  
+
   troubleRadio.addEventListener('change', function() {
     if (this.checked) {
       reflectionArea.classList.add('show');
@@ -79,7 +96,28 @@ function createSystemItem(systemText, index) {
       completedDiv.classList.remove('selected');
     }
   });
-  
+
+  // Pre-fill textarea with current field value so user can edit in place
+  adjustSystemRadio.addEventListener('change', function() {
+    if (this.checked) {
+      adjustSystemDiv.classList.add('selected');
+      adjustGoalDiv.classList.remove('selected');
+      reflectionLabel.textContent = 'Edit this system (changes will replace the current version):';
+      reflectionText.value = systemText;
+      reflectionText.focus();
+    }
+  });
+
+  adjustGoalRadio.addEventListener('change', function() {
+    if (this.checked) {
+      adjustGoalDiv.classList.add('selected');
+      adjustSystemDiv.classList.remove('selected');
+      reflectionLabel.textContent = 'Edit your goals (changes will replace the current version):';
+      reflectionText.value = moveToward || '';
+      reflectionText.focus();
+    }
+  });
+
   return div;
 }
 
@@ -104,78 +142,96 @@ function updateTokenMessage(canEarn) {
 }
 
 async function saveCheckin() {
-  // Get feature flags first
-  const flags = await storage.getFeatureFlags();
-  const tokenRate = flags.tokenEarningRate;
-  
-  chrome.storage.sync.get(['dailyHabits', 'tokens', 'invites', 'lastCheckin', 'lastInviteEarned'], function(data) {
+  chrome.storage.sync.get(['dailyHabits', 'moveToward', 'lastCheckin'], async function(data) {
     const systemArray = (data.dailyHabits || '').split('\n').filter(s => s.trim());
-    const canEarnTokens = checkIfCanEarnTokens(data.lastCheckin);
 
-    // Invite accrues once per week, tracked separately from token check-in
-    const now = new Date();
-    const lastInviteDate = data.lastInviteEarned ? new Date(data.lastInviteEarned) : null;
-    const daysSinceInvite = lastInviteDate
-      ? (now - lastInviteDate) / (1000 * 60 * 60 * 24)
-      : 999;
-    const earnedInvite = daysSinceInvite >= 7;
-    
     let completedCount = 0;
     let reflectionCount = 0;
     const checkinData = [];
-    
-    // Collect check-in data
+
+    // Track profile updates from reflections
+    let updatedSystems = [...systemArray]; // copy so we can splice
+    const goalAdditions = [];             // text to append to moveToward
+
     systemArray.forEach((system, index) => {
-      const completedRadio = document.getElementById(`radio-completed-${index}`);
-      const troubleRadio = document.getElementById(`radio-trouble-${index}`);
-      const reflectionText = document.getElementById(`reflection-text-${index}`);
-      
+      const completedRadio  = document.getElementById(`radio-completed-${index}`);
+      const troubleRadio    = document.getElementById(`radio-trouble-${index}`);
+      const reflectionText  = document.getElementById(`reflection-text-${index}`);
+      const adjustSystemRadio = document.getElementById(`adjust-system-${index}`);
+      const adjustGoalRadio   = document.getElementById(`adjust-goal-${index}`);
+
       if (completedRadio && completedRadio.checked) {
         completedCount++;
-        checkinData.push({ system: system, completed: true });
+        checkinData.push({ system, completed: true });
+
       } else if (troubleRadio && troubleRadio.checked) {
         reflectionCount++;
+        const text = reflectionText ? reflectionText.value.trim() : '';
+
         checkinData.push({
-          system: system,
+          system,
           completed: false,
-          reflection: reflectionText ? reflectionText.value.trim() : ''
+          adjustType: adjustSystemRadio && adjustSystemRadio.checked ? 'system'
+                    : adjustGoalRadio   && adjustGoalRadio.checked   ? 'goal'
+                    : 'none',
+          reflection: text
         });
+
+        // Apply profile updates if they wrote something
+        if (text) {
+          if (adjustSystemRadio && adjustSystemRadio.checked) {
+            // Replace just this system line with the edited version
+            updatedSystems[index] = text;
+          } else if (adjustGoalRadio && adjustGoalRadio.checked) {
+            // Queue full replacement of moveToward
+            goalAdditions.push(text);
+          }
+        }
       }
     });
-    
-    // Calculate tokens earned using feature flag rate
-    let tokensEarned = 0;
-    if (canEarnTokens) {
-      tokensEarned = (completedCount + reflectionCount) * tokenRate;
+
+    // Award tokens server-side. The backend enforces the earning cadence and
+    // caps the amount, then returns how many were actually granted.
+    const responses = completedCount + reflectionCount;
+    let earned = 0;
+    try {
+      const res = await storage.callFn('earn-checkin', { responses });
+      earned = res.earned || 0;
+    } catch (e) {
+      // Non-fatal: the check-in itself still saves; tokens just aren't granted
+      // if the backend was unreachable (offline / sign-in blocked).
+      console.warn('Eudaimonia: check-in token award failed (non-fatal):', e?.message);
     }
-    
-    // Save the check-in
+
+    // Build the storage update (profile data stays local; tokens are server-side)
     const updateData = {
-      lastCheckin: now.toISOString(),
-      tokens: (data.tokens || 0) + tokensEarned,
-      invites: (data.invites || 0) + (earnedInvite ? 1 : 0)
+      lastCheckin: new Date().toISOString(),
+      dailyHabits: updatedSystems.join('\n')
     };
-    if (earnedInvite) {
-      updateData.lastInviteEarned = now.toISOString();
+
+    // Replace moveToward with the edited version (pre-filled so existing text is preserved unless changed)
+    if (goalAdditions.length > 0) {
+      updateData.moveToward = goalAdditions[goalAdditions.length - 1]; // use last edit if multiple
     }
-    
-    // Store the check-in history
+
     chrome.storage.sync.get(['checkinHistory'], function(historyData) {
       const history = historyData.checkinHistory || [];
       history.push({
-        date: now.toISOString(),
+        date: new Date().toISOString(),
         data: checkinData,
-        tokensEarned,
-        inviteEarned: earnedInvite
+        tokensEarned: earned
       });
-      
       if (history.length > 10) history.shift();
       updateData.checkinHistory = history;
-      
+
       chrome.storage.sync.set(updateData, function() {
-        const tokenMsg = tokensEarned > 0 ? `You earned ${tokensEarned} tokens!` : 'Come back next week to earn tokens.';
-        const inviteMsg = earnedInvite ? ' You also earned an invite — share it with a friend! 💌' : '';
-        alert(`Check-in saved! ${tokenMsg}${inviteMsg}`);
+        // Build a meaningful success message
+        let msg = `Check-in saved!`;
+        if (earned > 0) msg += ` You earned ${earned} tokens!`;
+        const systemsChanged = updatedSystems.some((s, i) => s !== systemArray[i]);
+        if (systemsChanged) msg += `\n\n✏️ Your systems have been updated.`;
+        if (goalAdditions.length > 0) msg += `\n\n🎯 Your goals have been updated.`;
+        alert(msg);
         window.location.href = 'popup.html';
       });
     });

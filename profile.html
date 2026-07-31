@@ -139,6 +139,78 @@
     .unblock-btn:hover {
       background: #ff5252;
     }
+    
+    .category-card {
+      background: #fff0f0;
+      border: 1px solid #ffcccc;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+    
+    .category-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+    }
+    
+    .category-name {
+      color: #666;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .category-header-buttons {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .edit-keywords-btn {
+      background: #e0e0e0;
+      color: #333;
+      border: none;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    .edit-keywords-btn:hover {
+      background: #d0d0d0;
+    }
+    
+    .category-keywords-editor {
+      display: none;
+      padding: 10px 12px;
+      border-top: 1px solid #ffcccc;
+      background: white;
+    }
+    
+    .category-keywords-editor.show {
+      display: block;
+    }
+    
+    .category-keywords-editor label {
+      display: block;
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 6px;
+    }
+    
+    .category-keywords-editor textarea {
+      min-height: 50px;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    
+    .category-keywords-editor .save-keywords-btn {
+      width: auto;
+      padding: 6px 14px;
+      font-size: 12px;
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
@@ -203,6 +275,13 @@
   <div class="field-group">
     <h2>🚫 Blocked Content</h2>
     <p>Manage domains and categories you've blocked</p>
+    
+    <div id="autoBlockAdsSection" style="margin-bottom: 15px;">
+      <h3 style="font-size: 14px; color: #666; margin: 0 0 8px 0;">Auto-Block All Ads:</h3>
+      <div id="autoBlockAdsStatus" style="font-size: 13px; color: #666;">
+        Loading...
+      </div>
+    </div>
     
     <div id="blockedSources" style="margin-bottom: 15px;">
       <h3 style="font-size: 14px; color: #666; margin: 0 0 8px 0;">Blocked Sources:</h3>

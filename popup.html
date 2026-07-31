@@ -20,7 +20,7 @@
       background: #f0f7ff;
       border: 2px solid #4a9eff;
       border-radius: 8px;
-      padding: 15px;
+      padding: 18px;
       margin-bottom: 20px;
       text-align: center;
     }
@@ -47,21 +47,6 @@
       color: #555;
     }
     
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-      box-sizing: border-box;
-      font-family: inherit;
-    }
-    
-    textarea {
-      resize: vertical;
-      min-height: 60px;
-    }
-    
     button {
       background: #4a9eff;
       color: white;
@@ -77,74 +62,34 @@
     button:hover {
       background: #3a8eef;
     }
-    
-    .goal-list {
-      list-style: none;
-      padding: 0;
-      margin: 10px 0;
-    }
-    
-    .goal-item {
-      background: #f9f9f9;
-      padding: 10px;
-      margin-bottom: 8px;
-      border-radius: 4px;
-      border-left: 3px solid #4a9eff;
-    }
   </style>
 </head>
 <body>
   <div style="text-align: center; margin-bottom: 15px;">
     <img src="Eudaimonia_logo.png" alt="Eudaimonia" style="width: 60px; height: 60px;">
   </div>
-  <h1>🎯 SelfDev Goal Tracker</h1>
+  <h1>&#127919; SelfDev Goal Tracker</h1>
   
-  <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-    <div class="token-display" style="flex: 1;">
-      <div class="token-count" id="tokenCount">0</div>
-      <div class="token-label">Tokens</div>
-    </div>
-    <div class="token-display" id="inviteCard" style="flex: 1; background: #fffbf0; border-color: #f59f00; cursor: pointer; transition: background 0.2s;">
-      <div class="token-count" id="inviteCount" style="color: #f59f00;">0</div>
-      <div class="token-label">
-        Invites
-        <span id="inviteClickHint" style="display:block; font-size:11px; color:#f59f00; margin-top:2px;">(click to use)</span>
-      </div>
-    </div>
+  <div class="token-display" id="tokenBox" style="cursor: pointer; transition: background 0.2s, transform 0.1s;" title="Click to buy more tokens">
+    <div class="token-count" id="tokenCount">0</div>
+    <div class="token-label">Tokens</div>
+    <div style="font-size: 10px; color: #4a9eff; opacity: 0.7; margin-top: 3px;">click to top up &#43;</div>
   </div>
-
-  <!-- Invite panel — inline below the invite card, toggled by clicking it -->
-  <div id="invitePanel" style="display:none; background:#fffbf0; border:2px solid #f59f00; border-top:none; border-radius:0 0 8px 8px; padding:15px; margin-bottom:20px;">
-    <div style="font-size:14px; color:#333; margin-bottom:10px; line-height:1.5;">
-      Invite a friend via email and you'll both get bonus tokens when they complete their setup!
-    </div>
-    <input type="email" id="inviteEmail" placeholder="friend@example.com"
-      style="width:100%;padding:10px;border:2px solid #f59f00;border-radius:6px;font-size:14px;box-sizing:border-box;margin-bottom:10px;font-family:inherit;">
-    <div id="inviteCodeDisplay" style="font-size:12px;color:#f59f00;margin-bottom:10px;display:none;">
-      Your invite code: <strong id="inviteCodeText"></strong>
-    </div>
-    <div id="inviteStatus" style="font-size:12px;color:#666;margin-bottom:10px;display:none;"></div>
-    <button id="sendInviteBtn" style="background:#f59f00;margin-top:0;">
-      Generate Code & Open Email
-    </button>
-  </div>
-
-  <div style="margin-bottom: 20px;"></div>
   
   <button id="profileBtn" style="margin-bottom: 10px; background: #4a9eff;">
-    ✏️ Edit Profile
+    &#9999;&#65039; Edit Profile
   </button>
   
-  <button id="checkinBtn" style="margin-bottom: 10px; background: #20c997;">
-    ✓ Check In
+  <button id="checkinBtn" style="margin-bottom: 10px; background: #51cf66;">
+    &#10003; Check In
   </button>
   
-  <button id="promoteBtn" style="margin-bottom: 20px; background: #51cf66;">
-    🚀 Promote Link
+  <button id="promoteBtn" style="margin-bottom: 20px; background: #ff8800;">
+    &#128640; Promote Link
   </button>
   
   <div class="section">
-    <h2>Your Goals & Systems</h2>
+    <h2>Your Goals &amp; Systems</h2>
     
     <div id="moveTowardSection" style="margin-bottom: 15px;">
       <div style="font-weight: 500; color: #4a9eff; margin-bottom: 5px;">Long Term Goals:</div>

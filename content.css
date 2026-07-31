@@ -5,7 +5,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 999999;
+  z-index: 2147483647;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -41,6 +41,65 @@
   margin: 0 0 20px 0;
   color: #666;
   font-size: 14px;
+}
+
+/* Popover mode: used when the right-clicked element sits inside a
+   fixed, extremely-high-z-index ancestor (e.g. Taboola's "Next Up"
+   widget at z-index:9999999999). Rather than competing with that
+   ancestor in the global stacking order - which is unwinnable once both
+   sides are pinned near the real CSS maximum - this variant is inserted
+   as a CHILD of that same ancestor, so it only needs to render above its
+   own siblings within that inherited stacking context. It therefore
+   overrides the base #eudaimonia-block-modal rule's fixed, full-viewport
+   positioning with a small, absolutely-positioned card instead. */
+#eudaimonia-block-modal.eudaimonia-popover-mode {
+  position: absolute;
+  top: auto;
+  left: auto;
+  width: auto;
+  height: auto;
+  /* No competing with anything globally here - we only need to clear
+     this ancestor's own immediate children, so a modest local z-index
+     is enough. */
+  z-index: 999999;
+}
+
+.eudaimonia-popover-content {
+  position: static;
+  top: auto;
+  left: auto;
+  transform: none;
+  max-width: none;
+  width: 100%;
+  padding: 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+.eudaimonia-popover-content h2 {
+  font-size: 16px;
+}
+
+.eudaimonia-popover-content > p {
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.eudaimonia-popover-content .eudaimonia-option-group {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.eudaimonia-popover-content .eudaimonia-option-btn {
+  padding: 10px;
+}
+
+.eudaimonia-popover-content .eudaimonia-option-title {
+  font-size: 13px;
+}
+
+.eudaimonia-popover-content .eudaimonia-option-desc {
+  font-size: 11px;
 }
 
 .eudaimonia-option-group {
@@ -163,8 +222,41 @@
   transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
-  z-index: 999999;
+  z-index: 2147483643;
   pointer-events: all;
+}
+
+/* Video variant: sits above the player rather than over the picture, so it
+   never covers the video the user actually wants to watch. Kept compact
+   because a full-size badge above a player pushes the video down the page. */
+.eudaimonia-blocked-badge--video {
+  padding: 8px 12px;
+  gap: 10px;
+  margin: 0 0 8px 0;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.eudaimonia-blocked-badge--video .eudaimonia-badge-logo {
+  width: 22px;
+  height: 22px;
+}
+
+.eudaimonia-blocked-badge--video .eudaimonia-badge-text {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.eudaimonia-blocked-badge--video .eudaimonia-badge-link {
+  font-size: 11px;
+}
+
+/* In fullscreen only the fullscreened subtree renders, so a badge anchored
+   outside the player disappears on its own. This covers the case where the
+   player shell we anchored against is itself the element going fullscreen. */
+:fullscreen .eudaimonia-blocked-badge--video,
+:root:has(:fullscreen) .eudaimonia-blocked-badge--video {
+  display: none !important;
 }
 
 .eudaimonia-blocked-badge:hover {
@@ -204,7 +296,7 @@
   height: 100%;
   background: white;
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
-  z-index: 999998;
+  z-index: 2147483645;
   transition: right 0.3s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-y: auto;
@@ -343,7 +435,7 @@
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 999997;
+  z-index: 2147483644;
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
