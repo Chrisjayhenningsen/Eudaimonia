@@ -513,86 +513,31 @@ async function initializeUserDocument(userId) {
   }
 }
 
-// Aggregate user keywords to Firebase
+// Aggregate user keywords — now handled server-side. Sends the raw setup text
+// to the aggregate-keywords Netlify Function, which extracts keywords and
+// updates the shared aggregations/keywords doc via the Admin SDK. Kept
+// non-blocking and best-effort: aggregation is analytics and must never block
+// or fail setup. No auth header — the endpoint is intentionally open (see the
+// function's header note), matching the record-click pattern.
 async function aggregateUserKeywords(userData) {
   try {
-    // Extract keywords from user data
-    const goalKeywords = extractKeywords(
-      (userData.moveToward || '') + ' ' + 
-      (userData.dailyHabits || '') + ' ' + 
-      (userData.productCategories || '')
-    );
-    
-    const obstacleKeywords = extractKeywords(userData.moveAway || '');
-    
-    // Get current aggregation from Firebase
-    const aggUrl = `${FIRESTORE_URL}/aggregations/keywords`;
-    const response = await fetch(aggUrl);
-    
-    let currentData = {};
-    if (response.ok) {
-      const data = await response.json();
-      // Parse existing data
-      const fields = data.fields || {};
-      if (fields.keywords?.mapValue?.fields) {
-        const keywordsMap = fields.keywords.mapValue.fields;
-        for (const [word, value] of Object.entries(keywordsMap)) {
-          const wordFields = value.mapValue.fields;
-          currentData[word] = {
-            goals: parseInt(wordFields.goals?.integerValue || '0'),
-            obstacles: parseInt(wordFields.obstacles?.integerValue || '0')
-          };
-        }
-      }
-    }
-    
-    // Update counts
-    goalKeywords.forEach(word => {
-      if (!currentData[word]) {
-        currentData[word] = { goals: 0, obstacles: 0 };
-      }
-      currentData[word].goals++;
-    });
-    
-    obstacleKeywords.forEach(word => {
-      if (!currentData[word]) {
-        currentData[word] = { goals: 0, obstacles: 0 };
-      }
-      currentData[word].obstacles++;
-    });
-    
-    // Convert to Firestore format
-    const keywordsMapFields = {};
-    for (const [word, counts] of Object.entries(currentData)) {
-      keywordsMapFields[word] = {
-        mapValue: {
-          fields: {
-            goals: { integerValue: counts.goals.toString() },
-            obstacles: { integerValue: counts.obstacles.toString() }
-          }
-        }
-      };
-    }
-    
-    // Save back to Firebase
-    await fetch(aggUrl, {
-      method: 'PATCH',
+    const response = await fetch(`${FUNCTIONS_BASE}/aggregate-keywords`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        fields: {
-          keywords: {
-            mapValue: {
-              fields: keywordsMapFields
-            }
-          },
-          lastUpdated: { stringValue: new Date().toISOString() }
-        }
+        moveToward: userData.moveToward || '',
+        moveAway: userData.moveAway || '',
+        dailyHabits: userData.dailyHabits || '',
+        productCategories: userData.productCategories || ''
       })
     });
-    
-    console.log('Keyword aggregation updated');
+    if (!response.ok) {
+      console.log('Keyword aggregation returned HTTP', response.status, '(non-critical)');
+    } else {
+      console.log('Keyword aggregation updated (server-side)');
+    }
   } catch (error) {
-    console.error('Error aggregating keywords:', error);
+    console.log('Keyword aggregation failed (non-critical):', error.message);
   }
 }
 
