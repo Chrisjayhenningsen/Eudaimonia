@@ -170,9 +170,6 @@ chrome.notifications.onClicked.addListener((notificationId) => {
 
 // --- Ad signature aggregation (crowdsourced block collection) ---
 
-const FIREBASE_PROJECT_ID = 'eudaimonia-350ce';
-const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
-const AD_SIGNATURES_URL = `${FIRESTORE_URL}/aggregations/adSignatures`;
 const FUNCTIONS_BASE = 'https://eudaimonia-project.netlify.app/.netlify/functions';
 
 // Records a promotion click by calling the record-click function. Runs here in
@@ -187,62 +184,24 @@ async function recordPromoClick(promoId) {
   });
 }
 
-// Read-modify-write of a single Firestore doc holding a map of
-// { <key>: { count, selector, size, domain, updated } }. Mirrors the existing
-// keyword aggregation pattern. Same known caveat: concurrent writers can race
-// and lose an increment - acceptable for approximate telemetry at this scale.
+// Reports a crowdsourced ad-block signature — now handled server-side. POSTs the
+// signature to the report-ad-signature Netlify Function, which does the
+// read-modify-write of aggregations/adSignatures in a transaction (fixing the
+// old concurrent-writer race). Runs here in the service worker, not the content
+// script, so a visited page's CSP can't block the request. Best-effort and
+// non-blocking — a failure must never affect the user's block. No auth header:
+// the endpoint is intentionally open, matching record-click.
 async function reportAdSignature(sig) {
   if (!sig || !sig.key || !sig.selector) return;
 
-  const resp = await fetch(AD_SIGNATURES_URL);
-  let current = {};
-  if (resp.ok) {
-    const data = await resp.json();
-    const map = data.fields?.signatures?.mapValue?.fields || {};
-    for (const [k, v] of Object.entries(map)) {
-      const f = v.mapValue?.fields || {};
-      current[k] = {
-        count: parseInt(f.count?.integerValue || '0'),
-        selector: f.selector?.stringValue || '',
-        size: f.size?.stringValue || '',
-        domain: f.domain?.stringValue || '',
-        updated: f.updated?.stringValue || ''
-      };
-    }
-  }
-
-  const existing = current[sig.key];
-  current[sig.key] = {
-    count: (existing ? existing.count : 0) + 1,
-    selector: sig.selector,
-    size: sig.size || (existing ? existing.size : ''),
-    domain: sig.domain || (existing ? existing.domain : ''),
-    updated: new Date().toISOString()
-  };
-
-  const mapFields = {};
-  for (const [k, val] of Object.entries(current)) {
-    mapFields[k] = {
-      mapValue: {
-        fields: {
-          count: { integerValue: val.count.toString() },
-          selector: { stringValue: val.selector },
-          size: { stringValue: val.size },
-          domain: { stringValue: val.domain },
-          updated: { stringValue: val.updated }
-        }
-      }
-    };
-  }
-
-  await fetch(AD_SIGNATURES_URL, {
-    method: 'PATCH',
+  await fetch(`${FUNCTIONS_BASE}/report-ad-signature`, {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      fields: {
-        signatures: { mapValue: { fields: mapFields } },
-        lastUpdated: { stringValue: new Date().toISOString() }
-      }
+      key: sig.key,
+      selector: sig.selector,
+      size: sig.size || '',
+      domain: sig.domain || ''
     })
   });
 }
