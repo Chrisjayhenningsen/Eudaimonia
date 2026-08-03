@@ -9,9 +9,21 @@
 // client. All balance + promotion writes happen in a single transaction, so a
 // spend and its effect can't get out of sync.
 
+const crypto = require('crypto');
 const { db, FieldValue, json, preflight, uidFromRequest } = require('./_admin');
 
 const PROMOTION_COST = 1; // keep in sync with promote.js
+
+// One-way, unsalted SHA-256 of a normalized (trimmed, lowercased) email — the
+// SAME hashing the client used (see hashEmail in firebase-config.js), so a hash
+// computed here matches any previously written for the same address. This is a
+// "does this address already belong to a registered user?" anti-spam/dedup
+// check; the plaintext email is only ever used to derive this hash and is never
+// stored.
+function hashEmail(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  return crypto.createHash('sha256').update(normalized).digest('hex');
+}
 
 // Server-side copy of the submission blocklist check (defense in depth — the
 // client checks too, but the client can be bypassed).
@@ -50,6 +62,17 @@ exports.handler = async (event) => {
         return json(422, { error: 'BLOCKED_CONTENT' });
       }
 
+      // First-promotion anti-spam dedup (moved server-side from the client).
+      // The client can no longer write emailHashes directly (locked rules), so
+      // we record the hash here, inside the same transaction as the spend, so
+      // it commits only if the promotion actually goes through. Best-effort:
+      // guarded by isFirstPromotion + a non-empty email, both sent by the client.
+      const email = (body.email || '').trim();
+      const isFirstPromotion = !!body.isFirstPromotion;
+      const emailHashRef = (isFirstPromotion && email)
+        ? db.collection('emailHashes').doc(hashEmail(email))
+        : null;
+
       const promoRef = db.collection('promotions').doc();
       const newBalance = await db.runTransaction(async (tx) => {
         const uref = db.collection('users').doc(uid);
@@ -65,6 +88,12 @@ exports.handler = async (event) => {
           clicks: 0,
           timestamp: new Date().toISOString(),
         });
+        if (emailHashRef) {
+          tx.set(emailHashRef, {
+            registered: true,
+            createdAt: new Date().toISOString(),
+          }, { merge: true });
+        }
         return bal - PROMOTION_COST;
       });
       return json(200, { ok: true, promoId: promoRef.id, balance: newBalance });

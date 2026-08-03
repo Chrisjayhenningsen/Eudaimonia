@@ -57,6 +57,9 @@ exports.handler = async (event) => {
         lastCheckinAt: new Date(now).toISOString(),
         ...(earned > 0 ? { tokens: FieldValue.increment(earned) } : {}),
         updatedAt: new Date(now).toISOString(),
+        // Stamp creation time if this is the first backend-create of the doc, so
+        // console views sorted by createdAt don't hide it. Only set if absent.
+        ...(data.createdAt ? {} : { createdAt: new Date(now).toISOString() }),
       }, { merge: true });
 
       return { earned, eligible };

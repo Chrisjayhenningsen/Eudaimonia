@@ -29,6 +29,10 @@ exports.handler = async (event) => {
         tokens: FieldValue.increment(ONBOARDING_BONUS),
         onboardingClaimed: true,
         updatedAt: new Date().toISOString(),
+        // Stamp creation time on first backend-create so console views sorted by
+        // createdAt don't hide backend-made user docs. Only set if absent, so we
+        // never overwrite an earlier createdAt.
+        ...(data.createdAt ? {} : { createdAt: new Date().toISOString() }),
       }, { merge: true });
       return true;
     });
