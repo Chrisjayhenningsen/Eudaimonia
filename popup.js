@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function loadData() {
   chrome.storage.sync.get([
-    'setupComplete', 'moveToward', 'dailyHabits', 'moveAway'
+    'setupComplete', 'moveToward', 'dailyHabits', 'moveAway', 'lastCheckin'
   ], function(data) {
     if (!data.setupComplete || (!data.moveToward && !data.dailyHabits)) {
       window.location.href = 'setup.html';
@@ -44,8 +44,30 @@ function loadData() {
     displayText('moveAwayText', data.moveAway);
     displayText('dailyHabitsText', data.dailyHabits);
 
+    updateCheckinButton(data.lastCheckin || null);
     refreshBalance();
   });
+}
+
+// Passive replacement for the old check-in notification: when the weekly window
+// has elapsed and a check-in would earn tokens, restyle the Check In button
+// (amber + "Tokens ready!") so the cue lives in the popup instead of a system
+// notification. Same 7-day rule the rest of the client uses.
+function canEarnTokens(lastCheckin) {
+  if (!lastCheckin) return true; // never checked in
+  const daysSince = (Date.now() - new Date(lastCheckin).getTime()) / (1000 * 60 * 60 * 24);
+  return daysSince >= 7;
+}
+
+function updateCheckinButton(lastCheckin) {
+  const btn = document.getElementById('checkinBtn');
+  if (!btn) return;
+  if (canEarnTokens(lastCheckin)) {
+    btn.style.background = '#f59f00';
+    btn.innerHTML = '&#127873; Check In &mdash; Tokens ready!';
+    btn.title = 'You can earn tokens with this check-in';
+  }
+  // Otherwise leave the default green "Check In" state from popup.html.
 }
 
 // Balance is now canonical in Firestore (users/{uid}); read it from there

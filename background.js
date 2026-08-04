@@ -7,15 +7,6 @@ chrome.runtime.onInstalled.addListener(() => {
       contexts: ['all']
     });
   });
-
-  // Schedule reminder alarm if user already has a schedule saved
-  // (handles reinstalls / browser restarts)
-  rescheduleAlarmFromStorage();
-});
-
-// Reschedule alarm on service worker startup (alarms don't survive SW restarts)
-chrome.runtime.onStartup.addListener(() => {
-  rescheduleAlarmFromStorage();
 });
 
 // Handle context menu clicks
@@ -125,47 +116,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // async response
   }
 
-  if (request.action === 'scheduleCheckinReminder') {
-    scheduleCheckinAlarm(request.day, request.time);
-    sendResponse({ success: true });
-    return false;
-  }
-
-  if (request.action === 'cancelCheckinReminder') {
-    chrome.alarms.clear('checkinReminder');
-    sendResponse({ success: true });
-    return false;
-  }
-});
-
-// Fire notification when alarm triggers
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'checkinReminder') {
-    chrome.storage.sync.get(['lastCheckin'], (data) => {
-      const lastCheckin = data.lastCheckin || null;
-      const canEarn = canEarnTokens(lastCheckin);
-
-      chrome.notifications.create('checkinReminder', {
-        type: 'basic',
-        iconUrl: 'icon48.png',
-        title: canEarn ? '🎯 Time to check in and earn tokens!' : '🎯 Time for your weekly check-in!',
-        message: canEarn
-          ? 'Complete your check-in to earn tokens this week.'
-          : 'Reflect on your systems and track your progress.',
-        priority: 1
-      });
-    });
-  }
-});
-
-// Open the extension popup when notification is clicked
-chrome.notifications.onClicked.addListener((notificationId) => {
-  if (notificationId === 'checkinReminder') {
-    chrome.notifications.clear(notificationId);
-    // Open the popup by opening checkin.html in a new tab as a fallback
-    // (Chrome doesn't allow programmatically opening the popup)
-    chrome.tabs.create({ url: chrome.runtime.getURL('checkin.html') });
-  }
 });
 
 // --- Ad signature aggregation (crowdsourced block collection) ---
@@ -206,61 +156,8 @@ async function reportAdSignature(sig) {
   });
 }
 
-// --- Alarm scheduling helpers ---
-
-function rescheduleAlarmFromStorage() {
-  chrome.storage.sync.get(['checkinDay', 'checkinTime'], (data) => {
-    if (data.checkinDay !== undefined && data.checkinDay !== '' && data.checkinTime) {
-      scheduleCheckinAlarm(data.checkinDay, data.checkinTime);
-    }
-  });
-}
-
-function scheduleCheckinAlarm(day, time) {
-  // Clear any existing alarm first
-  chrome.alarms.clear('checkinReminder', () => {
-    if (day === '' || day === undefined || day === null) {
-      // User opted out of reminders
-      return;
-    }
-
-    const targetDay = parseInt(day); // 0 = Sunday, 6 = Saturday
-    const [hours, minutes] = time.split(':').map(Number);
-
-    const nextFire = getNextOccurrence(targetDay, hours, minutes);
-    const weekInMinutes = 7 * 24 * 60;
-
-    chrome.alarms.create('checkinReminder', {
-      when: nextFire,
-      periodInMinutes: weekInMinutes
-    });
-
-    console.log(`Eudaimonia: check-in reminder scheduled for ${new Date(nextFire).toLocaleString()}, repeating weekly`);
-  });
-}
-
-function getNextOccurrence(targetDay, hours, minutes) {
-  const now = new Date();
-  const result = new Date(now);
-
-  result.setHours(hours, minutes, 0, 0);
-
-  // How many days ahead is the target day?
-  const currentDay = now.getDay();
-  let daysUntil = targetDay - currentDay;
-
-  if (daysUntil < 0) {
-    daysUntil += 7; // Wrap to next week
-  } else if (daysUntil === 0 && result <= now) {
-    daysUntil = 7; // Same day but time has passed — next week
-  }
-
-  result.setDate(result.getDate() + daysUntil);
-  return result.getTime();
-}
-
-function canEarnTokens(lastCheckin) {
-  if (!lastCheckin) return true;
-  const daysSince = (Date.now() - new Date(lastCheckin).getTime()) / (1000 * 60 * 60 * 24);
-  return daysSince >= 7;
-}
+// Check-in reminders are no longer scheduled here. The nagging notification was
+// replaced by a passive state on the popup's Check In button (see popup.js),
+// which let us drop the `notifications` and `alarms` permissions entirely —
+// fewer install-time permission prompts. Eligibility ("can earn tokens") is
+// computed on popup open from the stored lastCheckin timestamp.

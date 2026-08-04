@@ -201,13 +201,6 @@ function saveProfile() {
   };
   
   chrome.storage.sync.set(profileData, function() {
-    // Tell background to reschedule (or cancel) the alarm with the new schedule
-    chrome.runtime.sendMessage({
-      action: 'scheduleCheckinReminder',
-      day: profileData.checkinDay,
-      time: profileData.checkinTime
-    });
-    
     window.location.href = 'popup.html';
   });
 }

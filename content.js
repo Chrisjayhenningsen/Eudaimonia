@@ -1908,6 +1908,31 @@ window.addEventListener('load', () => {
     const blockedCategories = data.blockedCategories || [];
     const autoBlockAds = data.autoBlockAds !== false; // default ON
 
+    // ── Perf: top-frame gating ───────────────────────────────────────────────
+    // Only the TOP frame runs the full document-scanning machinery below (the
+    // blocked-source link scan, the selector/overlay/heuristic passes, the
+    // MutationObserver, and the delayed full-document sweeps). A subframe runs
+    // ONLY scanAdNetworkFrame — the single pass that must execute from *inside* a
+    // frame, because it blanks a frame whose own origin is a pure ad network and
+    // the top document can't reach into a cross-origin child.
+    //
+    // This is safe for the flagship cases: top-level ad iframes (including the
+    // heuristic PubFuture/mangaread case) are caught by the top frame's own
+    // heuristic/selector passes, which inspect the <iframe> element from the
+    // parent — they never needed the in-frame instance. What we give up is
+    // scanning ads/links nested *inside* non-ad-network subframes; in exchange,
+    // an ad-heavy page with dozens of iframes stops installing a persistent
+    // subtree+attribute MutationObserver and four delayed full sweeps in every
+    // one of them.
+    if (window.self !== window.top) {
+      const runFrameScan = () => { try { scanAdNetworkFrame({ autoBlockAds }); } catch (e) {} };
+      runFrameScan();
+      // A few cheap re-runs in case the frame's body/creative inflates shortly
+      // after load — replaces the per-frame observer we deliberately skip.
+      [800, 2500, 6000].forEach(delay => setTimeout(runFrameScan, delay));
+      return;
+    }
+
     // Block previously-blocked sources
     if (blockedSources.length > 0) {
       const links = document.querySelectorAll('a[href]');

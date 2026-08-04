@@ -138,12 +138,6 @@ async function completeSetup() {
       if (typeof aggregateUserKeywords === 'function') {
         await aggregateUserKeywords(setupData);
       }
-      // Reschedule alarm with potentially updated schedule
-      chrome.runtime.sendMessage({
-        action: 'scheduleCheckinReminder',
-        day: setupData.checkinDay,
-        time: setupData.checkinTime
-      });
       window.location.href = 'popup.html';
     });
   } else {
@@ -159,13 +153,6 @@ async function completeSetup() {
       if (typeof aggregateUserKeywords === 'function') {
         await aggregateUserKeywords(setupData);
       }
-
-      // Schedule the check-in reminder alarm
-      chrome.runtime.sendMessage({
-        action: 'scheduleCheckinReminder',
-        day: setupData.checkinDay,
-        time: setupData.checkinTime
-      });
 
       // Grant the one-time onboarding tokens server-side (idempotent per user).
       try {
