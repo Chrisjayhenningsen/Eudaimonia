@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// Eudaimonia Firestore Security Rules — INTERIM lockdown.
+//
+// Locks every collection that carries token/money value so no client can write
+// it; those are mutated only by the Netlify Functions via the Firebase Admin
+// SDK, which bypasses these rules. `aggregations` (keyword insights +
+// crowdsourced ad-signatures) is now backend-only too, written solely by the
+// aggregate-keywords and report-ad-signature functions. Reads there stay public
+// so the insights page can display aggregate demand.
+//
+// PUBLISH ORDER: the value-bearing locks (promotions/users/config) require the
+// updated extension to be the version users run. The `aggregations` write lock
+// is safe to publish independently — the old client's writes there were always
+// best-effort/try-caught, so denying them only stops telemetry, never a feature.
+//
+// Test in the Firebase console Rules Playground before publishing, and keep a
+// copy of your current rules so you can roll back.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Promotions: shown to everyone; created/updated only by the backend
+    // (spend + record-click). Never client-writable.
+    match /promotions/{promoId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // App config + content policy (featureFlags, blocklist). Read by the client;
+    // changed only out-of-band (Firebase console / Admin SDK).
+    // NOTE: do not store secrets here (e.g. move safeBrowsingKey to an env var).
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Per-user token balance. A signed-in user may read ONLY their own doc.
+    // Never client-writable — the balance is mutated only by trusted backend
+    // code (claim-onboarding, spend, earn-checkin, invites, stripe-webhook).
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Aggregations (keyword insights + crowdsourced ad-signatures). Written ONLY
+    // by the backend (aggregate-keywords + report-ad-signature functions), which
+    // bypass these rules. Reads stay public so the insights page can show
+    // aggregate keyword demand. Clients can no longer write here.
+    match /aggregations/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Everything else — invites, processedSessions, pendingTokenAwards,
+    // emailHashes — is backend-only. The Admin SDK bypasses these rules; clients
+    // get no access.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
