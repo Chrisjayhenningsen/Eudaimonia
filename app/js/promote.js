@@ -109,6 +109,7 @@ var EudPromote = (function () {
       case 'BLOCKED_CONTENT': return 'This was stopped by the content filter. If you think that\'s a mistake, email chrisjayhenningsen@gmail.com.';
       case 'AUTH_REQUIRED': return 'I couldn\'t sign you in, so nothing was spent. A VPN or content blocker is the usual cause.';
       case 'NETWORK': return 'I couldn\'t reach the server, so nothing was spent. Try again in a moment.';
+      case 'UNKNOWN': return 'I didn\'t hear back from the server and couldn\'t check whether your pick went through. Look under Your picks on the profile before trying again.';
       default: return 'That didn\'t go through, and nothing was spent. Try again in a moment.';
     }
   }

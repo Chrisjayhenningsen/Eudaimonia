@@ -78,7 +78,16 @@
         <div id="picksOtherList" class="cards"></div>
       </div>
       <p id="picksFoot" class="fine" hidden>Opening a pick counts one click for whoever shared it. At your next check-in I'll ask whether you're glad you tried it.</p>
-      <p class="links"><a href="#/profile">Improve my matches</a> · <a href="#/add">Add a pick of your own</a></p>
+      <p class="links"><a href="#/profile">Improve my matches</a></p>
+
+      <div class="panel builder">
+        <h2 id="bTitle">Have something to share?</h2>
+        <p class="hint" id="bHint">Add a pick of your own, so people working towards the same things can find it. Your first pick needs an email; it stays in this browser until then.</p>
+        <label class="field" for="bEmail">Email</label>
+        <input id="bEmail" type="email" inputmode="email" autocomplete="email" enterkeyhint="go" aria-describedby="bHint bEmailError">
+        <p id="bEmailError" class="error" role="alert" hidden></p>
+        <div class="actions"><button id="bGo" class="btn" type="button">Add a pick of your own</button></div>
+      </div>
     </section>
 
     <!-- ── Add a pick ───────────────────────────────────────────────── -->

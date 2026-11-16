@@ -16,6 +16,7 @@
 //   POST functions  aggregate-keywords { moveToward, moveAway, dailyHabits,
 //                                        productCategories }    (only if sharing is on)
 //   POST functions  check-url          { url }                  (adding a pick)
+//   OPTIONS functions spend, check-url  (no body; wakes them when the add view opens)
 //   POST functions  spend   { action:'promote', url, title, description,
 //                             keywords, email, isFirstPromotion } (signed in)
 // Nothing else. The page's CSP (connect-src) enforces that list at the
@@ -49,10 +50,10 @@ var EudApi = (function () {
   var authInFlight = null;
   var poolRefreshing = null;
 
-  function timedFetch(url, options) {
+  function timedFetch(url, options, timeoutMs) {
     var opts = options || {};
     var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
-    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS) : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, timeoutMs || TIMEOUT_MS) : null;
     if (ctrl) opts.signal = ctrl.signal;
     return fetch(url, opts).finally(function () { if (timer) clearTimeout(timer); });
   }
@@ -164,7 +165,7 @@ var EudApi = (function () {
 
   // ─── Netlify functions ────────────────────────────────────────────────────
   // Signed-in call. Resolves { ok:true, data } or { ok:false, code }.
-  async function callFn(name, body) {
+  async function callFn(name, body, timeoutMs) {
     try {
       var user = await ensureAuthenticated();
       if (!user) return { ok: false, code: 'AUTH_REQUIRED' };
@@ -172,7 +173,7 @@ var EudApi = (function () {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + user.token },
         body: JSON.stringify(body || {})
-      });
+      }, timeoutMs);
       var data = {};
       try { data = await res.json(); } catch (e) {}
       if (!res.ok) return { ok: false, code: data.error || ('HTTP_' + res.status) };
@@ -255,6 +256,34 @@ var EudApi = (function () {
 
   // Spends one token server-side and creates the promotion in one transaction.
   // Resolves { ok:true, data:{ promoId, balance } } or { ok:false, code }.
+  // A cold spend (firebase-admin load, Google cert fetch, blocklist read,
+  // transaction) can pass the usual 9 s, so it gets longer to answer.
+  var SPEND_TIMEOUT_MS = 25000;
+
+  // Wakes spend and check-url while the person is still typing, so the real
+  // call lands on a warm function. OPTIONS returns before any work is done.
+  function warmAddFunctions() {
+    ['spend', 'check-url'].forEach(function (name) {
+      timedFetch(FUNCTIONS_BASE + '/' + name, { method: 'OPTIONS' }).catch(function () {});
+    });
+  }
+
+  // After a lost reply the spend may still have gone through. Promotions are
+  // public and carry the creator's uid, so look for this one before saying
+  // nothing was spent. Resolves the promotion, null if absent, or undefined
+  // if it couldn't be checked.
+  async function findMyPromotion(url, sinceMs) {
+    var uid = EudStore.get('userId', '');
+    var promos = await refreshPool();
+    if (!uid || !promos) return undefined;
+    var n = EudPromote.normalizeUrl(url);
+    for (var i = 0; i < promos.length; i++) {
+      var p = promos[i];
+      if (p.userId === uid && EudPromote.normalizeUrl(p.url) === n && Date.parse(p.timestamp) >= sinceMs - 120000) return p;
+    }
+    return null;
+  }
+
   async function promote(p, isFirst) {
     var r = await callFn('spend', {
       action: 'promote',
@@ -264,7 +293,7 @@ var EudApi = (function () {
       keywords: p.keywords,
       email: isFirst ? (p.email || '') : '',
       isFirstPromotion: !!isFirst
-    });
+    }, SPEND_TIMEOUT_MS);
     if (r.ok && typeof r.data.balance === 'number') EudStore.set('cachedBalance', r.data.balance);
     return r;
   }
@@ -312,6 +341,7 @@ var EudApi = (function () {
           description: (f.description && f.description.stringValue) || '',
           keywords: vals.map(function (v) { return v.stringValue; }).filter(Boolean),
           timestamp: (f.timestamp && f.timestamp.stringValue) || '',
+          userId: (f.userId && f.userId.stringValue) || '',
           cost: int(f.cost),
           budget: int(f.budget),
           clicks: int(f.clicks),
@@ -365,6 +395,8 @@ var EudApi = (function () {
     earnCheckin: earnCheckin,
     getBlocklist: getBlocklist,
     checkUrl: checkUrl,
-    promote: promote
+    promote: promote,
+    warmAddFunctions: warmAddFunctions,
+    findMyPromotion: findMyPromotion
   };
 })();

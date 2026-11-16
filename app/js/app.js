@@ -189,6 +189,7 @@
     status.className = 'note';
     status.textContent = 'Finding your picks…';
     show(status, true);
+    renderPicksBuilder();
 
     var results = await Promise.all([EudApi.getPromotionPool(!!forceRefresh), EudApi.getFeatureFlags()]);
     var pool = results[0], flags = results[1];
@@ -492,6 +493,31 @@
     });
   }
 
+  function renderPicksBuilder() {
+    var input = $('bEmail');
+    if (!input.value) input.value = EudStore.get('promoterEmail', '');
+    show($('bEmailError'), false);
+    if (EudStore.get('myPromotions', []).length) {
+      $('bHint').textContent = 'Add another pick of your own. Each one costs 1 token.';
+    }
+  }
+
+  function startAddFromPicks() {
+    var value = $('bEmail').value.trim();
+    var needed = EudStore.get('myPromotions', []).length === 0;
+    var ok = EMAIL_RE.test(value) || (!value && !needed);
+    $('bEmailError').textContent = value
+      ? "That doesn't look like an email address."
+      : 'Your first pick needs an email address.';
+    show($('bEmailError'), !ok);
+    if (!ok) { $('bEmail').focus(); return; }
+    if (value) {
+      EudStore.set('promoterEmail', value); // device only until the first pick
+      $('aEmail').value = value;
+    }
+    go('add');
+  }
+
   // ─── Add a pick ───────────────────────────────────────────────────────────
   // Same checks and order as the extension's promote.js: local validation,
   // blocklist, Safe Browsing (fails open), then one server-side spend that
@@ -588,6 +614,7 @@
     show($('aEmailGroup'), first);
     if (first && !$('aEmail').value) $('aEmail').value = EudStore.get('promoterEmail', '');
     updatePreview();
+    EudApi.warmAddFunctions();
     showAddBalance();
     addFlags = await EudApi.getFeatureFlags();
     updatePreview();
@@ -631,7 +658,16 @@
       }
 
       btn.textContent = 'Adding…';
+      var startedAt = Date.now();
       var r = await EudApi.promote(p, isFirst);
+      if (!r.ok && r.code === 'NETWORK') {
+        // The reply was lost, not necessarily the spend. Check before
+        // telling anyone nothing was spent, so a retry can't double up.
+        btn.textContent = 'Checking…';
+        var found = await EudApi.findMyPromotion(p.url, startedAt);
+        if (found) r = { ok: true, data: { promoId: found.id } };
+        else if (found === undefined) r = { ok: false, code: 'UNKNOWN' };
+      }
       if (!r.ok) {
         if (r.code === 'Invalid URL') showAddErrors({ url: 'The server didn\'t accept that address.' });
         else setAddStatus(EudPromote.errorMessage(r.code), true);
@@ -694,6 +730,7 @@
     $('startGoals').value = '';
     $('startEmail').value = '';
     $('aEmail').value = '';
+    $('bEmail').value = '';
     exposuresBumped = false;
     go('start');
   }
@@ -710,6 +747,9 @@
     $('emailSave').addEventListener('click', saveEmail);
     $('eraseBtn').addEventListener('click', erase);
     $('addBtn').addEventListener('click', submitAdd);
+    $('bGo').addEventListener('click', startAddFromPicks);
+    $('bEmail').addEventListener('input', function () { show($('bEmailError'), false); });
+    $('bEmail').addEventListener('keydown', function (e) { if (e.key === 'Enter') startAddFromPicks(); });
     $('aUrl').addEventListener('blur', onUrlBlur);
     ['aUrl', 'aTitle', 'aDesc', 'aKeywords'].forEach(function (id) { $(id).addEventListener('input', updatePreview); });
 
