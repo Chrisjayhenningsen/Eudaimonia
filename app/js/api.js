@@ -4,6 +4,7 @@
 //
 // COMPLETE LIST OF REQUESTS
 //   GET  firestore  config/featureFlags          (public read)
+//   GET  firestore  config/blocklist             (public read, only when adding a pick)
 //   GET  firestore  promotions                   (public read)
 //   POST identitytoolkit accounts:signUp         (anonymous account, no body data)
 //   POST securetoken token                       (refresh that anonymous account)
@@ -14,8 +15,13 @@
 //   POST functions  record-glad        { promoId, answer }      (new on web)
 //   POST functions  aggregate-keywords { moveToward, moveAway, dailyHabits,
 //                                        productCategories }    (only if sharing is on)
+//   POST functions  check-url          { url }                  (adding a pick)
+//   POST functions  spend   { action:'promote', url, title, description,
+//                             keywords, email, isFirstPromotion } (signed in)
 // Nothing else. The page's CSP (connect-src) enforces that list at the
-// browser level. The email field is never sent anywhere.
+// browser level. The email is sent once, with the first pick only, exactly
+// as the extension does: spend stores a one-way SHA-256 of it (anti-spam
+// dedup) and never the address. Every other request carries no email.
 //
 // Every call here is best-effort: it resolves with a value or null/false and
 // never throws to the caller, and every fetch has a timeout, so a blocked
@@ -216,6 +222,53 @@ var EudApi = (function () {
       productCategories: profile.productCategories || ''
     });
   }
+  // ─── Adding a pick ────────────────────────────────────────────────────────
+  // Blocklist terms, lowercased. [] if unreachable: the server checks again.
+  async function getBlocklist() {
+    try {
+      var res = await timedFetch(FIRESTORE_URL + '/config/blocklist');
+      if (!res.ok) return [];
+      var data = await res.json();
+      var vals = (data.fields && data.fields.terms && data.fields.terms.arrayValue && data.fields.terms.arrayValue.values) || [];
+      return vals.map(function (v) { return String(v.stringValue || '').toLowerCase(); }).filter(Boolean);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Safe Browsing via check-url. Resolves { unsafe, threatType } and fails
+  // open ({ unsafe:false }) when the lookup can't run, as the extension does.
+  async function checkUrl(url) {
+    try {
+      var res = await timedFetch(FUNCTIONS_BASE + '/check-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url })
+      });
+      if (!res.ok) return { unsafe: false };
+      var d = await res.json();
+      return { unsafe: !!d.unsafe, threatType: d.threatType || '' };
+    } catch (e) {
+      return { unsafe: false };
+    }
+  }
+
+  // Spends one token server-side and creates the promotion in one transaction.
+  // Resolves { ok:true, data:{ promoId, balance } } or { ok:false, code }.
+  async function promote(p, isFirst) {
+    var r = await callFn('spend', {
+      action: 'promote',
+      url: p.url,
+      title: p.title,
+      description: p.description,
+      keywords: p.keywords,
+      email: isFirst ? (p.email || '') : '',
+      isFirstPromotion: !!isFirst
+    });
+    if (r.ok && typeof r.data.balance === 'number') EudStore.set('cachedBalance', r.data.balance);
+    return r;
+  }
+
   function claimOnboarding() { return callFn('claim-onboarding', {}); }
   function earnCheckin(responses) { return callFn('earn-checkin', { responses: responses }); }
 
@@ -309,6 +362,9 @@ var EudApi = (function () {
     recordGlad: recordGlad,
     aggregateKeywords: aggregateKeywords,
     claimOnboarding: claimOnboarding,
-    earnCheckin: earnCheckin
+    earnCheckin: earnCheckin,
+    getBlocklist: getBlocklist,
+    checkUrl: checkUrl,
+    promote: promote
   };
 })();

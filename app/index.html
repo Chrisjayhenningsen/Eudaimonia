@@ -58,7 +58,7 @@
         <label class="field" for="startEmail">Email (optional)</label>
         <input id="startEmail" type="email" inputmode="email" autocomplete="email" aria-describedby="startEmailHint startEmailNote startEmailError">
         <p id="startEmailError" class="error" role="alert" hidden>That doesn't look like an email address. Fix it or leave it empty.</p>
-        <p class="fine" id="startEmailNote">It stays in this browser for now. Adding picks from the web is coming soon; today it works in the Chrome extension.</p>
+        <p class="fine" id="startEmailNote">It stays in this browser until you add your first pick. Then it's sent once so the server can keep a one-way fingerprint of it, which stops one person making many accounts. The address itself isn't stored.</p>
       </div>
 
       <button id="startBtn" class="btn btn-fill" type="button">Show my picks</button>
@@ -78,7 +78,54 @@
         <div id="picksOtherList" class="cards"></div>
       </div>
       <p id="picksFoot" class="fine" hidden>Opening a pick counts one click for whoever shared it. At your next check-in I'll ask whether you're glad you tried it.</p>
-      <p class="links"><a href="#/profile">Improve my matches</a></p>
+      <p class="links"><a href="#/profile">Improve my matches</a> · <a href="#/add">Add a pick of your own</a></p>
+    </section>
+
+    <!-- ── Add a pick ───────────────────────────────────────────────── -->
+    <section id="view-add" class="view" hidden aria-labelledby="addTitle">
+      <h1 id="addTitle" tabindex="-1">Add a pick</h1>
+      <div id="addForm">
+        <p class="lede">Share something that helped you, or something you built. I show it to people whose goals contain the words you choose.</p>
+        <p id="addBalance" class="note" role="status">Checking your tokens…</p>
+
+        <label class="field" for="aUrl">Link</label>
+        <input id="aUrl" type="url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" placeholder="https://example.com" aria-describedby="aUrlError aUrlCheck">
+        <p id="aUrlCheck" class="hint" role="status" hidden></p>
+        <p id="aUrlError" class="error" role="alert" hidden></p>
+
+        <label class="field" for="aTitle">Title</label>
+        <input id="aTitle" type="text" maxlength="80" autocomplete="off" placeholder="Couch to 10k in eight weeks" aria-describedby="aTitleCount aTitleError">
+        <p id="aTitleCount" class="hint">0 / 80</p>
+        <p id="aTitleError" class="error" role="alert" hidden></p>
+
+        <label class="field" for="aDesc">Why it's worth a look</label>
+        <textarea id="aDesc" rows="3" maxlength="300" autocomplete="off" placeholder="A free plan that got me from no running to a 10k without injury." aria-describedby="aDescCount aDescError"></textarea>
+        <p id="aDescCount" class="hint">0 / 300</p>
+        <p id="aDescError" class="error" role="alert" hidden></p>
+
+        <label class="field" for="aKeywords">Words that should match it</label>
+        <p class="hint" id="aKeywordsHint">Words people would write in their goals, separated by commas. These decide who sees it.</p>
+        <input id="aKeywords" type="text" autocomplete="off" autocapitalize="off" placeholder="running, 10k, fitness" aria-describedby="aKeywordsHint aKeywordsError">
+        <p id="aKeywordsError" class="error" role="alert" hidden></p>
+
+        <div id="aEmailGroup" hidden>
+          <label class="field" for="aEmail">Your email</label>
+          <p class="hint" id="aEmailHint">Needed once, for your first pick. It's sent with this pick so the server can keep a one-way fingerprint of it, which stops one person making many accounts. The address itself isn't stored.</p>
+          <input id="aEmail" type="email" inputmode="email" autocomplete="email" aria-describedby="aEmailHint aEmailError">
+          <p id="aEmailError" class="error" role="alert" hidden></p>
+        </div>
+
+        <h2>How it will look</h2>
+        <div id="aPreview" class="cards" aria-hidden="true"></div>
+
+        <p class="fine">It costs 1 token, which pays for one person opening it. Topping up comes later.</p>
+        <p id="addStatus" class="note" role="alert" hidden></p>
+        <div class="actions">
+          <button id="addBtn" class="btn btn-fill" type="button">Add my pick for 1 token</button>
+          <a class="btn" href="#/profile">Cancel</a>
+        </div>
+      </div>
+      <div id="addDone" role="status" hidden></div>
     </section>
 
     <!-- ── Weekly check-in ──────────────────────────────────────────── -->
@@ -135,7 +182,7 @@
       <hr>
 
       <h2>Have something to share?</h2>
-      <p class="hint" id="pEmailHint">An email is only needed if you want to promote a pick of your own. It stays in this browser for now and isn't sent anywhere.</p>
+      <p class="hint" id="pEmailHint">An email is only needed if you want to add a pick of your own. It stays in this browser until your first pick, when it's sent once to make a one-way fingerprint. The address itself isn't stored.</p>
       <label class="field" for="pEmail">Email (optional)</label>
       <input id="pEmail" type="email" inputmode="email" autocomplete="email" aria-describedby="pEmailHint pEmailError">
       <p id="pEmailError" class="error" role="alert" hidden>That doesn't look like an email address.</p>
@@ -146,7 +193,13 @@
       <div id="promoterPanel" class="panel" hidden>
         <h3>For promoters</h3>
         <p><span id="balanceLine">Checking your tokens…</span></p>
-        <p class="hint">Tokens pay for showing a pick of your own. Promoting and topping up on the web come later; for now both work in the Chrome extension, which keeps a separate balance.</p>
+        <p class="hint">Each token pays for one person opening a pick of yours. The Chrome extension keeps a separate balance. Topping up on the web comes later.</p>
+        <div class="actions"><a class="btn" href="#/add">Add a pick</a></div>
+        <div id="myPicks" hidden>
+          <h3 class="mine-title">Your picks</h3>
+          <ul id="myPicksList" class="mine"></ul>
+          <p class="fine">Counts refresh every 45 minutes or so.</p>
+        </div>
       </div>
 
       <hr>
@@ -167,6 +220,7 @@
   <script src="js/api.js"></script>
   <script src="js/match.js"></script>
   <script src="js/glad.js"></script>
+  <script src="js/promote.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

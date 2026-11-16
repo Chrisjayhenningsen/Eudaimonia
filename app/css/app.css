@@ -129,7 +129,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 36px 0 0; }
 /* ── Forms ──────────────────────────────────────────────────────────── */
 .field { display: block; font-weight: 600; margin: 24px 0 6px; }
 
-textarea, input[type="email"] {
+textarea, input[type="email"], input[type="url"], input[type="text"] {
   width: 100%; display: block;
   background: var(--surface); color: var(--ink);
   border: 1px solid var(--line); border-radius: var(--radius);
@@ -137,7 +137,7 @@ textarea, input[type="email"] {
 }
 textarea { resize: vertical; min-height: 5.5rem; }
 textarea::placeholder, input::placeholder { color: var(--muted); opacity: 0.75; }
-textarea:focus-visible, input[type="email"]:focus-visible {
+textarea:focus-visible, input[type="email"]:focus-visible, input[type="url"]:focus-visible, input[type="text"]:focus-visible {
   outline: 3px solid var(--accent); outline-offset: 1px; border-color: transparent; border-radius: var(--radius);
 }
 
@@ -196,6 +196,17 @@ textarea:focus-visible, input[type="email"]:focus-visible {
 .tag { background: var(--accent-tint); color: var(--accent); border-radius: 999px; padding: 3px 10px; font-size: 0.8rem; }
 .tag-glad { background: var(--green-tint); color: var(--green); }
 .card-open { margin-left: auto; color: var(--accent); font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
+
+/* ── Add a pick ─────────────────────────────────────────────────────── */
+#aTitleCount, #aDescCount { text-align: right; margin: 4px 2px 0; font-size: 0.82rem; }
+#aPreview .card { pointer-events: none; }
+.mine-title { margin-top: 22px; }
+.mine { list-style: none; padding: 0; margin: 0; }
+.mine li { border-top: 1px solid var(--line); padding: 10px 0; overflow-wrap: anywhere; }
+.mine li:first-child { border-top: 0; }
+.mine strong { display: block; font-weight: 600; }
+.mine span { color: var(--muted); font-size: 0.9rem; }
+.note-green { background: var(--green-tint); border-color: var(--green); }
 
 /* ── Check-in ───────────────────────────────────────────────────────── */
 fieldset { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 16px 16px 14px; margin: 12px 0; min-width: 0; }

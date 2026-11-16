@@ -1,6 +1,6 @@
-// Eudaimonia web: views and wiring. One page, four views switched by the URL
-// hash (#/start, #/picks, #/checkin, #/profile) so links such as a future
-// calendar reminder can point straight at #/checkin.
+// Eudaimonia web: views and wiring. One page, five views switched by the URL
+// hash (#/start, #/picks, #/checkin, #/profile, #/add) so links such as a
+// future calendar reminder can point straight at #/checkin.
 //
 // Order of work on every action: save to the device first, show the result,
 // then talk to the network. Nothing on screen ever waits on a request that
@@ -15,9 +15,10 @@
   var ALL_KEYS = PROFILE_KEYS.concat([
     'setupComplete', 'setupDate', 'lastCheckin', 'checkinHistory', 'shareKeywords', 'promoterEmail',
     'authToken', 'userId', 'refreshToken', 'tokenExpiry', 'cachedBalance',
-    'promoPoolCache', 'promoExposures', 'openedPicks', 'gladAnswered'
+    'promoPoolCache', 'promoExposures', 'openedPicks', 'gladAnswered', 'myPromotions'
   ]);
-  var TITLES = { start: 'Eudaimonia', picks: 'Picks · Eudaimonia', checkin: 'Check-in · Eudaimonia', profile: 'Profile · Eudaimonia' };
+  var VIEWS = ['start', 'picks', 'checkin', 'profile', 'add'];
+  var TITLES = { start: 'Eudaimonia', picks: 'Picks · Eudaimonia', checkin: 'Check-in · Eudaimonia', profile: 'Profile · Eudaimonia', add: 'Add a pick · Eudaimonia' };
 
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var exposuresBumped = false; // count one exposure per page load, not per tab switch
@@ -49,7 +50,7 @@
     if (!ready) name = 'start';
     else if (name === 'start' || !TITLES[name]) name = 'picks';
 
-    ['start', 'picks', 'checkin', 'profile'].forEach(function (v) { show($('view-' + v), v === name); });
+    VIEWS.forEach(function (v) { show($('view-' + v), v === name); });
     show($('nav'), ready);
     Array.prototype.forEach.call(document.querySelectorAll('#nav a'), function (a) {
       if (a.dataset.route === name) a.setAttribute('aria-current', 'page');
@@ -60,6 +61,7 @@
     if (name === 'picks') renderPicks();
     if (name === 'checkin') renderCheckin();
     if (name === 'profile') renderProfile();
+    if (name === 'add') renderAdd();
 
     if (!firstRoute) {
       window.scrollTo(0, 0);
@@ -130,7 +132,9 @@
     EudApi.recordClick(promo.id); // keepalive request; survives the tab switch
   }
 
-  function buildCard(promo, flags) {
+  // `preview` builds an inert copy (no link, no click counting) for the
+  // add-a-pick form.
+  function buildCard(promo, flags, preview) {
     var href = safeUrl(promo.url);
     var kids = [];
     if (flags.promotionDisplay === 'url' && domainOf(promo.url)) {
@@ -146,7 +150,7 @@
     if (href) meta.appendChild(el('span', { class: 'card-open', text: 'Open ↗' }));
     kids.push(meta);
 
-    if (!href) return el('div', { class: 'card' }, kids);
+    if (!href || preview) return el('div', { class: 'card' }, kids);
 
     var a = el('a', { class: 'card', href: href, target: '_blank', rel: 'noopener' }, kids);
     a.addEventListener('click', function () { onPickOpened(promo); });
@@ -190,7 +194,10 @@
     var pool = results[0], flags = results[1];
     if ($('view-picks').hidden) return; // the visitor moved on while this loaded
 
-    var ranked = EudMatch.rankPicks(pool.promos, getProfile(), EudStore.get('promoExposures', {}));
+    // Your own picks are left out: opening one would spend your own budget.
+    var mineIds = myPromoIds();
+    var promos = pool.promos.filter(function (p) { return !mineIds[p.id]; });
+    var ranked = EudMatch.rankPicks(promos, getProfile(), EudStore.get('promoExposures', {}));
     var shown = ranked.slice(0, VISIBLE_PICKS);
 
     if (pool.state === 'offline-cache') {
@@ -216,7 +223,7 @@
       return;
     }
 
-    var others = EudMatch.unmatchedPicks(pool.promos, ranked).slice(0, VISIBLE_PICKS);
+    var others = EudMatch.unmatchedPicks(promos, ranked).slice(0, VISIBLE_PICKS);
     if (!others.length) {
       emptyState('Nothing has been shared yet',
         "There are no picks with any budget left right now. This fills up as people share things they've found useful, so it's worth looking again in a few days.");
@@ -416,7 +423,7 @@
 
     var email = EudStore.get('promoterEmail', '');
     $('pEmail').value = email;
-    showPromoterPanel(!!email);
+    showPromoterPanel(!!email || EudStore.get('myPromotions', []).length > 0);
   }
 
   function saveProfile() {
@@ -450,6 +457,216 @@
     line.textContent = b.live
       ? 'You have ' + b.tokens + (b.tokens === 1 ? ' token' : ' tokens') + ' on this device\'s anonymous sign-in.'
       : "I couldn't check your tokens just now (sign-in may be blocked by a VPN). Last known: " + b.tokens + '.';
+    renderMyPicks();
+  }
+
+  function myPromoIds() {
+    var ids = {};
+    EudStore.get('myPromotions', []).forEach(function (p) { if (p.id) ids[p.id] = true; });
+    return ids;
+  }
+
+  async function renderMyPicks() {
+    var mine = EudStore.get('myPromotions', []);
+    show($('myPicks'), mine.length > 0);
+    if (!mine.length) return;
+    var pool = await EudApi.getPromotionPool(false);
+    var byId = {};
+    pool.promos.forEach(function (p) { byId[p.id] = p; });
+    var list = $('myPicksList');
+    list.textContent = '';
+    mine.slice().reverse().forEach(function (m) {
+      var live = byId[m.id];
+      var line;
+      if (live) {
+        line = live.clicks + (live.clicks === 1 ? ' open' : ' opens') + ' · ' +
+          (live.budget > 0 ? live.budget + ' left in budget' : 'budget used up, so it isn\'t being shown');
+        var votes = live.gladYes + live.gladNo;
+        if (votes) line += ' · ' + live.gladYes + ' of ' + votes + ' glad they tried it';
+      } else if (Date.now() - Date.parse(m.timestamp || 0) < 2 * 60 * 60 * 1000) {
+        line = 'Just added. Counts show up after the next refresh.';
+      } else {
+        line = 'Not in the current list.';
+      }
+      list.appendChild(el('li', {}, [el('strong', { text: m.title || m.url }), el('span', { text: line })]));
+    });
+  }
+
+  // ─── Add a pick ───────────────────────────────────────────────────────────
+  // Same checks and order as the extension's promote.js: local validation,
+  // blocklist, Safe Browsing (fails open), then one server-side spend that
+  // creates the promotion and debits the token together.
+  var adding = false;
+  var urlChecks = {};       // href -> Promise<{unsafe, threatType}>, per page load
+  var duplicateArmed = '';  // href the person has been warned about once
+  var addFlags = null;
+  var ADD_FIELDS = { url: 'aUrl', title: 'aTitle', description: 'aDesc', keywords: 'aKeywords', email: 'aEmail' };
+  var ADD_ERRORS = { url: 'aUrlError', title: 'aTitleError', description: 'aDescError', keywords: 'aKeywordsError', email: 'aEmailError' };
+
+  function addInput() {
+    return { url: $('aUrl').value, title: $('aTitle').value, description: $('aDesc').value, keywords: $('aKeywords').value, email: $('aEmail').value };
+  }
+
+  function setAddStatus(text, amber) {
+    var st = $('addStatus');
+    st.className = amber ? 'note note-amber' : 'note';
+    st.textContent = text || '';
+    show(st, !!text);
+  }
+
+  function showAddErrors(errors) {
+    Object.keys(ADD_ERRORS).forEach(function (k) {
+      var node = $(ADD_ERRORS[k]);
+      node.textContent = errors[k] || '';
+      show(node, !!errors[k]);
+      if (errors[k]) $(ADD_FIELDS[k]).setAttribute('aria-invalid', 'true');
+      else $(ADD_FIELDS[k]).removeAttribute('aria-invalid');
+    });
+  }
+
+  function updatePreview() {
+    var i = addInput();
+    $('aTitleCount').textContent = i.title.length + ' / ' + EudPromote.TITLE_MAX;
+    $('aDescCount').textContent = i.description.length + ' / ' + EudPromote.DESC_MAX;
+    var box = $('aPreview');
+    box.textContent = '';
+    box.appendChild(buildCard({
+      url: EudPromote.cleanUrl(i.url) || '',
+      title: i.title.trim() || 'Your title',
+      description: i.description.trim() || 'Why it\'s worth a look.',
+      keywords: EudPromote.parseKeywords(i.keywords)
+    }, addFlags || EudApi.getDefaultFlags(), true));
+  }
+
+  function checkUrlOnce(href) {
+    if (!urlChecks[href]) urlChecks[href] = EudApi.checkUrl(href);
+    return urlChecks[href];
+  }
+
+  async function onUrlBlur() {
+    var href = EudPromote.cleanUrl($('aUrl').value);
+    var note = $('aUrlCheck');
+    if (!href) { show(note, false); return; }
+    if (EudPromote.isBlockedDomain(href)) { showAddErrors({ url: 'This address can\'t be added.' }); return; }
+    note.textContent = 'Checking this link with Google Safe Browsing…';
+    show(note, true);
+    var r = await checkUrlOnce(href);
+    if (EudPromote.cleanUrl($('aUrl').value) !== href) return; // edited meanwhile
+    show(note, false);
+    if (r.unsafe) showAddErrors({ url: 'Google Safe Browsing flags this link as ' + (r.threatType || 'unsafe').replace(/_/g, ' ').toLowerCase() + ', so it can\'t be added.' });
+  }
+
+  async function showAddBalance() {
+    var line = $('addBalance');
+    line.className = 'note';
+    line.textContent = 'Checking your tokens…';
+    var b = await EudApi.getBalance();
+    // The setup bonus may never have arrived (blocked at the time). Claiming
+    // is once per sign-in on the server, so asking again is safe.
+    if (b.live && b.tokens < EudPromote.COST) {
+      var c = await EudApi.claimOnboarding();
+      if (c.ok && c.data.granted) b = await EudApi.getBalance();
+    }
+    if (!b.live) {
+      line.className = 'note note-amber';
+      line.textContent = "I couldn't check your tokens just now (sign-in may be blocked by a VPN). You can still try; nothing is spent unless it goes through.";
+    } else if (b.tokens < EudPromote.COST) {
+      line.className = 'note note-amber';
+      line.textContent = 'You have no tokens yet. A weekly check-in earns some.';
+    } else {
+      line.textContent = 'You have ' + b.tokens + (b.tokens === 1 ? ' token.' : ' tokens.');
+    }
+  }
+
+  async function renderAdd() {
+    if (adding) return;
+    show($('addForm'), true);
+    show($('addDone'), false);
+    setAddStatus('');
+    showAddErrors({});
+    var first = EudStore.get('myPromotions', []).length === 0;
+    show($('aEmailGroup'), first);
+    if (first && !$('aEmail').value) $('aEmail').value = EudStore.get('promoterEmail', '');
+    updatePreview();
+    showAddBalance();
+    addFlags = await EudApi.getFeatureFlags();
+    updatePreview();
+  }
+
+  async function submitAdd() {
+    if (adding) return;
+    var mine = EudStore.get('myPromotions', []);
+    var isFirst = mine.length === 0;
+    var v = EudPromote.validate(addInput(), isFirst);
+    showAddErrors(v.errors);
+    setAddStatus('');
+    if (!v.ok) {
+      var firstBad = Object.keys(ADD_FIELDS).filter(function (k) { return v.errors[k]; })[0];
+      $(ADD_FIELDS[firstBad]).focus();
+      return;
+    }
+    var p = v.value;
+    $('aUrl').value = p.url; // show the https:// that was assumed
+
+    if (EudPromote.alreadyAdded(mine, p.url) && duplicateArmed !== p.url) {
+      duplicateArmed = p.url;
+      setAddStatus('You\'ve already added this link from this device. Tap the button again to add it again with a fresh token.', true);
+      return;
+    }
+
+    var btn = $('addBtn');
+    adding = true;
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    try {
+      var checks = await Promise.all([EudApi.getBlocklist(), checkUrlOnce(p.url)]);
+      if (EudPromote.blocklistHit(checks[0], p.title, p.description, p.keywords)) {
+        setAddStatus(EudPromote.errorMessage('BLOCKED_CONTENT'), true);
+        return;
+      }
+      if (checks[1].unsafe) {
+        showAddErrors({ url: 'Google Safe Browsing flags this link, so it can\'t be added.' });
+        $('aUrl').focus();
+        return;
+      }
+
+      btn.textContent = 'Adding…';
+      var r = await EudApi.promote(p, isFirst);
+      if (!r.ok) {
+        if (r.code === 'Invalid URL') showAddErrors({ url: 'The server didn\'t accept that address.' });
+        else setAddStatus(EudPromote.errorMessage(r.code), true);
+        return;
+      }
+
+      // Saved on the device before anything else happens.
+      mine.push({ id: r.data.promoId, url: p.url, title: p.title, timestamp: new Date().toISOString() });
+      EudStore.set('myPromotions', mine);
+      if (isFirst && p.email) EudStore.set('promoterEmail', p.email);
+      duplicateArmed = '';
+      ['aUrl', 'aTitle', 'aDesc', 'aKeywords'].forEach(function (id) { $(id).value = ''; });
+      EudApi.getPromotionPool(true); // so the new pick is in the list next time
+
+      var done = $('addDone');
+      done.textContent = '';
+      var left = r.data.balance;
+      done.appendChild(el('p', { class: 'note note-green', text:
+        'Your pick is live. People whose goals contain ' + p.keywords.map(function (k) { return '\u201c' + k + '\u201d'; }).join(', ') +
+        ' will see it.' + (typeof left === 'number' ? ' You have ' + left + (left === 1 ? ' token' : ' tokens') + ' left.' : '') }));
+      done.appendChild(el('div', { class: 'actions' }, [
+        el('a', { class: 'btn btn-fill', href: '#/profile', text: 'See how it\'s doing' }),
+        el('a', { class: 'btn', href: '#/picks', text: 'Back to my picks' })
+      ]));
+      var again = el('button', { class: 'btn', type: 'button', text: 'Add another' });
+      again.addEventListener('click', function () { renderAdd(); $('aUrl').focus(); });
+      done.lastChild.appendChild(again);
+      show($('addForm'), false);
+      show(done, true);
+      $('addTitle').focus();
+    } finally {
+      adding = false;
+      btn.disabled = false;
+      btn.textContent = 'Add my pick for 1 token';
+    }
   }
 
   function saveEmail() {
@@ -476,6 +693,7 @@
     btn.textContent = 'Erase everything on this device';
     $('startGoals').value = '';
     $('startEmail').value = '';
+    $('aEmail').value = '';
     exposuresBumped = false;
     go('start');
   }
@@ -491,6 +709,9 @@
     $('profileSave').addEventListener('click', saveProfile);
     $('emailSave').addEventListener('click', saveEmail);
     $('eraseBtn').addEventListener('click', erase);
+    $('addBtn').addEventListener('click', submitAdd);
+    $('aUrl').addEventListener('blur', onUrlBlur);
+    ['aUrl', 'aTitle', 'aDesc', 'aKeywords'].forEach(function (id) { $(id).addEventListener('input', updatePreview); });
 
     window.addEventListener('hashchange', route);
     route();
