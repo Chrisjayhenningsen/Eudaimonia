@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="canvas16" width="16" height="16"></canvas>
+<canvas id="canvas48" width="48" height="48"></canvas>
+<canvas id="canvas128" width="128" height="128"></canvas>
+<script>
+function createIcon(canvasId, size) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  
+  // Background
+  ctx.fillStyle = '#4a9eff';
+  ctx.fillRect(0, 0, size, size);
+  
+  // Target symbol
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = size / 8;
+  
+  const centerX = size / 2;
+  const centerY = size / 2;
+  const radius = size / 3;
+  
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius / 2, 0, 2 * Math.PI);
+  ctx.stroke();
+  
+  // Save
+  canvas.toBlob(function(blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'icon' + size + '.png';
+    a.click();
+  });
+}
+
+createIcon('canvas16', 16);
+setTimeout(() => createIcon('canvas48', 48), 100);
+setTimeout(() => createIcon('canvas128', 128), 200);
+</script>
+</body>
+</html>

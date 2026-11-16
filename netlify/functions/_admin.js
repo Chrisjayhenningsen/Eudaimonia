@@ -11,6 +11,7 @@
 //   STRIPE_SECRET_KEY         – (used by checkout/webhook)
 //   STRIPE_WEBHOOK_SECRET     – (used by webhook)
 //   STRIPE_PRICE_ID, SITE_URL – (used by checkout)
+//   SAFE_BROWSING_KEY         – (used by check-url)
 
 const admin = require('firebase-admin');
 
@@ -63,6 +64,69 @@ async function uidFromRequest(event) {
   }
 }
 
+// ─── Client IP ───────────────────────────────────────────────────────────────
+// Netlify sets x-nf-client-connection-ip to the real client IP; x-forwarded-for
+// is a comma-separated fallback (client is the first entry). Returns 'unknown'
+// if neither is present, so the rate limiter still functions (all unknown-IP
+// callers just share one bucket).
+function clientIp(event) {
+  const h = event.headers || {};
+  const nf = h['x-nf-client-connection-ip'] || h['X-Nf-Client-Connection-Ip'];
+  if (nf) return String(nf).trim();
+  const xff = h['x-forwarded-for'] || h['X-Forwarded-For'] || '';
+  const first = String(xff).split(',')[0].trim();
+  return first || 'unknown';
+}
+
+// ─── Rate limiting ───────────────────────────────────────────────────────────
+// Serverless has no shared memory, so we back a fixed-window counter with
+// Firestore. One doc per (bucket, window): its id is `${bucket}_${windowStart}`
+// and it holds a running `count`. Each call reads+increments in a transaction
+// and reports whether the caller is still under `limit` for the current window.
+//
+// FAILS OPEN: any error (Firestore blip, etc.) returns { allowed: true } so the
+// limiter can never take an endpoint down. Writes land in the `rateLimits`
+// collection, which the locked rules already deny to all clients (Admin SDK
+// bypasses rules). Set a Firestore TTL policy on `rateLimits.expiresAt` to
+// auto-purge old windows; without it the docs are tiny but accumulate.
+//
+//   bucket        – a stable string identifying the dimension being limited,
+//                   e.g. `click:1.2.3.4` or `click:1.2.3.4:promoAbc123`.
+//   limit         – max requests allowed within one window.
+//   windowSeconds – window length.
+function safeDocId(s) {
+  // Firestore doc ids can't contain '/', can't be '.'/'..', can't match __*__.
+  return String(s).replace(/\//g, '_').replace(/^__+|__+$/g, '_').slice(0, 400) || 'unknown';
+}
+
+async function checkRateLimit(bucket, limit, windowSeconds) {
+  try {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const windowStart = nowSec - (nowSec % windowSeconds);
+    const id = safeDocId(`${bucket}_${windowStart}`);
+    const ref = db.collection('rateLimits').doc(id);
+
+    const allowed = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const count = (snap.exists && snap.data().count) || 0;
+      if (count >= limit) return false;
+      tx.set(ref, {
+        count: count + 1,
+        bucket,
+        // Kept two windows past the window end so an in-flight window is never
+        // purged early; drives an optional Firestore TTL policy on this field.
+        expiresAt: new Date((windowStart + windowSeconds * 2) * 1000),
+      }, { merge: true });
+      return true;
+    });
+
+    return { allowed };
+  } catch (err) {
+    console.warn('checkRateLimit failed open:', err.message);
+    return { allowed: true, error: true };
+  }
+}
+
 // ─── Balance helpers ─────────────────────────────────────────────────────────
 async function getBalance(uid) {
   const snap = await db.collection('users').doc(uid).get();
@@ -78,4 +142,9 @@ async function creditTokens(uid, amount, reason) {
   }, { merge: true });
 }
 
-module.exports = { admin, db, FieldValue, json, preflight, uidFromRequest, getBalance, creditTokens };
+module.exports = {
+  admin, db, FieldValue,
+  json, preflight, uidFromRequest,
+  clientIp, checkRateLimit,
+  getBalance, creditTokens,
+};

@@ -1,0 +1,288 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Eudaimonia — shared UI palette for the extension's own pages
+   (popup, profile, check-in, promote, setup, insights, success).
+
+   WHY THIS FILE EXISTS
+   Every page used to carry its own copy of the same button rules and the same
+   hex values. Six copies of one palette is how a palette drifts: a colour gets
+   tuned on one page and the others quietly disagree. Everything visual that is
+   shared now lives here, and each page keeps only its own LAYOUT.
+
+   THE SYSTEM — weight carries hierarchy, not colour:
+
+     FILLED ON HOVER  whatever you are pointing at. Tonal buttons fill so the
+                      UI feels responsive without any standing noise.
+     TONAL            the resting state of every action.
+     FILLED AT REST   used ONLY where a screen genuinely has one obvious next
+                      step: the Save / Submit / Next button on the form pages,
+                      which sit beside a single Cancel.
+
+   The POPUP deliberately has nothing filled at rest. It is a menu of four
+   peer actions, not a form: lighting one of them made the other three look
+   subordinate when they are not, and the asymmetry was the first thing the
+   eye landed on. There, position carries priority and lighting is reserved
+   for the pointer — plus Check In when tokens are actually waiting, which is
+   the one place the UI lights itself to say "there is something here for
+   you".
+
+   CONTRAST
+   Every foreground/background pair here meets WCAG AA (>=4.5:1), in both the
+   tonal and the hover-filled state. That is a real fix, not housekeeping: the
+   old fills were white text on #4a9eff (2.75:1), #51cf66 (2.01:1) and #ff8800
+   (2.39:1). Because text flips to white as a tonal button fills, the hover
+   fills have to be dark enough to carry white — which is why they are deeper
+   than the tints would suggest. test-popup-palette.js asserts all of it.
+
+   The one exception is the "tokens ready" amber: bright amber cannot carry
+   white text at any usable saturation, so it keeps dark text and merely
+   deepens on hover instead of inverting.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Action hues — sampled from Eudaimonia_logo.png, not invented.
+     The logo is three spheres around a deep interior: orange (hue 37),
+     green (104), blue (201) and the indigo body (235). Those four hues are
+     reproduced exactly; only saturation and lightness were solved for, so
+     that every tint/text and fill/white pair clears WCAG AA. Indigo carries
+     less saturation than the rest because it stays vivid at the darkness it
+     needs, where the others would go muddy.
+
+     Re-derive with the script in the project notes if the logo ever changes. */
+  --eud-blue:          #147bb3;   /* logo hue 201 — the right-hand sphere */
+  --eud-blue-hover:    #0f6b9c;
+  --eud-blue-text:     #1272a5;
+
+  --eud-blue-tint:     #e6f4fc;
+  --eud-blue-line:     #c4e4f5;
+
+  --eud-indigo-tint:   #e6e8fc;   /* logo hue 235 — the deep interior */
+  --eud-indigo-text:   #555ebe;
+  --eud-indigo-line:   #c4c8f5;
+  --eud-indigo-fill:   #646cc4;
+
+  --eud-green-tint:    #ecfce6;   /* logo hue 104 — the left sphere */
+  --eud-green-text:    #357e1b;
+  --eud-green-line:    #d1f5c4;
+  --eud-green-fill:    #37821c;
+
+  --eud-amber-tint:    #fcf4e6;   /* logo hue 37 — the top sphere */
+  --eud-amber-text:    #976411;
+  --eud-amber-line:    #f5e2c4;
+  --eud-amber-fill:    #9c6711;
+
+  --eud-red-tint:      #fdecea;
+  --eud-red-text:      #b3261e;
+  --eud-red-line:      #f5c9c4;
+  --eud-red-fill:      #a51e17;
+
+  /* Surfaces — the same logo blue, so cards and blue buttons agree */
+  --eud-surface-blue:  #e6f4fc;
+  --eud-surface-line:  #c4e4f5;
+
+  /* Neutrals */
+  --eud-neutral-tint:  #eef0f2;
+  --eud-neutral-text:  #3c4043;
+  --eud-neutral-line:  #d8dcdf;
+  --eud-neutral-fill:  #4a5054;
+
+  --eud-ink:           #333333;
+  --eud-ink-soft:      #666666;
+  --eud-ink-faint:     #70757a;   /* #999 was 2.85:1 on white, #8a8f94 3.26 — this is 4.65 */
+  --eud-ink-disabled:  #656a6f;   /* on the disabled tint, not on white: 4.78 */
+  --eud-line:          #e0e0e0;
+
+  --eud-radius:        8px;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────
+   Colour, shape and motion live here. Pages keep their own width / margin /
+   flex, because that is layout, and it differs legitimately per screen. */
+button {
+  border: 1px solid var(--eud-blue);
+  border-radius: var(--eud-radius);
+  background: var(--eud-blue);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(43, 76, 140, 0.28);
+  /* `color` is transitioned because tonal buttons flip their text to white
+     as they fill. */
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+              transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+button:hover {
+  background: var(--eud-blue-hover);
+  border-color: var(--eud-blue-hover);
+  box-shadow: 0 3px 10px rgba(43, 76, 140, 0.3);
+}
+
+button:active { transform: translateY(1px); }
+
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(54, 118, 201, 0.35);
+}
+
+button:disabled,
+button:disabled:hover {
+  background: var(--eud-neutral-tint);
+  border-color: var(--eud-neutral-line);
+  /* Deliberately NOT --eud-ink-faint: that is tuned for white, and on the
+     disabled tint it only reaches 4.07:1. Disabled text still has to be
+     readable — it is telling the user why they cannot proceed. */
+  color: var(--eud-ink-disabled);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Explicit primary, for screens where the default `button` styling has been
+   overridden or where the intent should be stated outright. */
+.btn-primary {
+  background: var(--eud-blue);
+  color: #ffffff;
+  border-color: var(--eud-blue);
+  box-shadow: 0 1px 3px rgba(43, 76, 140, 0.28);
+}
+
+.btn-primary:hover {
+  background: var(--eud-blue-hover);
+  border-color: var(--eud-blue-hover);
+}
+
+/* Secondary / cancel. Neutral at rest, fills to slate on hover like the
+   coloured tonals, so the whole set behaves consistently. */
+.button-secondary,
+.btn-tonal-neutral {
+  background: var(--eud-neutral-tint);
+  color: var(--eud-neutral-text);
+  border-color: var(--eud-neutral-line);
+  box-shadow: none;
+}
+
+.button-secondary:hover,
+.btn-tonal-neutral:hover {
+  background: var(--eud-neutral-fill);
+  color: #ffffff;
+  border-color: var(--eud-neutral-fill);
+  box-shadow: 0 2px 8px rgba(40, 46, 50, 0.22);
+}
+
+/* Tonal at rest, filled on hover. */
+.btn-tonal-indigo {
+  background: var(--eud-indigo-tint);
+  color: var(--eud-indigo-text);
+  border-color: var(--eud-indigo-line);
+  box-shadow: none;
+}
+.btn-tonal-indigo:hover {
+  background: var(--eud-indigo-fill);
+  color: #ffffff;
+  border-color: var(--eud-indigo-fill);
+  box-shadow: 0 2px 8px rgba(60, 64, 160, 0.25);
+}
+
+.btn-tonal-green {
+  background: var(--eud-green-tint);
+  color: var(--eud-green-text);
+  border-color: var(--eud-green-line);
+  box-shadow: none;
+}
+.btn-tonal-green:hover {
+  background: var(--eud-green-fill);
+  color: #ffffff;
+  border-color: var(--eud-green-fill);
+  box-shadow: 0 2px 8px rgba(22, 90, 50, 0.25);
+}
+
+.btn-tonal-amber {
+  background: var(--eud-amber-tint);
+  color: var(--eud-amber-text);
+  border-color: var(--eud-amber-line);
+  box-shadow: none;
+}
+.btn-tonal-amber:hover {
+  background: var(--eud-amber-fill);
+  color: #ffffff;
+  border-color: var(--eud-amber-fill);
+  box-shadow: 0 2px 8px rgba(120, 72, 8, 0.25);
+}
+
+.btn-tonal-blue {
+  background: var(--eud-blue-tint);
+  color: var(--eud-blue-text);
+  border-color: var(--eud-blue-line);
+  box-shadow: none;
+}
+.btn-tonal-blue:hover {
+  background: var(--eud-blue);
+  color: #ffffff;
+  border-color: var(--eud-blue);
+  box-shadow: 0 2px 8px rgba(43, 76, 140, 0.25);
+}
+
+/* Check In when a check-in would actually earn tokens. This is the logo's own
+   top sphere (#fdb23a, sampled) — the one moment the UI lights itself, wearing
+   the brand's brightest colour. Dark text rather than white: bright orange
+   cannot carry white at any usable saturation (see the note at the top), so
+   this one deepens on hover instead of inverting. */
+.btn-ready {
+  background: #fdb23a;
+  color: #3d2600;
+  border-color: #e09520;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.btn-ready:hover {
+  background: #f5a422;
+  border-color: #c9840f;
+  color: #3d2600;
+  box-shadow: 0 2px 8px rgba(160, 110, 10, 0.25);
+}
+
+/* ── Advisory notes ─────────────────────────────────────────────────────────
+   One shape, four meanings. Warnings and errors are the same family as the
+   amber/red buttons so they read as part of one system. */
+.note-amber,
+.note-info,
+.note-danger,
+.note-success {
+  font-size: 12.5px;
+  line-height: 1.5;
+  border-radius: var(--eud-radius);
+  border: 1px solid;
+  padding: 10px 12px;
+}
+
+.note-amber   { color: var(--eud-amber-text); background: var(--eud-amber-tint); border-color: var(--eud-amber-line); }
+.note-info    { color: #1f5fa8;               background: var(--eud-surface-blue); border-color: var(--eud-surface-line); }
+.note-danger  { color: var(--eud-red-text);   background: var(--eud-red-tint);   border-color: var(--eud-red-line); }
+.note-success { color: var(--eud-green-text); background: var(--eud-green-tint); border-color: var(--eud-green-line); }
+
+/* ── Form controls ──────────────────────────────────────────────────────── */
+input[type="text"],
+input[type="url"],
+input[type="number"],
+textarea,
+select {
+  border-radius: 6px;
+  border: 1px solid var(--eud-line);
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--eud-blue);
+  box-shadow: 0 0 0 3px rgba(54, 118, 201, 0.18);
+}

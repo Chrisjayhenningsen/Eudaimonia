@@ -9,18 +9,24 @@
 // read-modify-write runs in a transaction so concurrent reporters can't clobber
 // each other's counts (the old client version had a known race here).
 //
-// NOTE: being open, this endpoint is spammable to inflate signature counts, and
-// the whole map lives in one Firestore document (1 MB ceiling) — both are
-// accepted-for-launch tradeoffs carried over from the client version. Revisit
-// (rate-limiting, or per-signature docs / a subcollection) if this telemetry
-// ever grows large or feeds anything load-bearing.
+// RATE LIMITING: being open, this endpoint is spammable to inflate signature
+// counts, and the whole map lives in one Firestore document (1 MB ceiling). We
+// cap it at 120 reports / hour per IP — heavy ad-blocking in a session is
+// legitimate (and already session-deduped client-side), but this stops runaway
+// inflation. Over-limit callers get 429 and are dropped (telemetry is best-
+// effort; the client ignores the response). The limiter fails open.
 
-const { db, json, preflight } = require('./_admin');
+const { db, json, preflight, clientIp, checkRateLimit } = require('./_admin');
 
 exports.handler = async (event) => {
   const pre = preflight(event);
   if (pre) return pre;
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
+
+  // Rate limit before any work.
+  const ip = clientIp(event);
+  const rl = await checkRateLimit(`adsig:${ip}`, 120, 3600);
+  if (!rl.allowed) return json(429, { error: 'rate_limited' });
 
   let sig;
   try { sig = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'Invalid body' }); }

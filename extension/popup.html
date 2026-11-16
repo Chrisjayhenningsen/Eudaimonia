@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    body {
+      width: 400px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+    }
+    
+    h1 {
+      font-size: 20px;
+      margin: 0 0 20px 0;
+      color: #333;
+    }
+    
+    .token-display {
+      background: var(--eud-surface-blue);
+      border: 1px solid var(--eud-surface-line);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .token-display:hover {
+      background: #d8edfa;
+      border-color: #a9d8f0;
+    }
+
+    /* #4a9eff on this tint was 2.55:1 — too weak even for 32px display type. */
+    .token-count {
+      font-size: 32px;
+      font-weight: bold;
+      color: var(--eud-blue-text);
+    }
+    
+    .token-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .section {
+      margin-bottom: 20px;
+    }
+    
+    .section h2 {
+      font-size: 16px;
+      margin: 0 0 10px 0;
+      color: #555;
+    }
+
+    /* Layout only — every button COLOUR lives in ui.css. The popup stacks its
+       actions full-width; the other pages lay theirs out side by side. */
+    button {
+      display: block;
+      width: 100%;
+      padding: 11px 20px;
+    }
+
+    /* The advisory note tucks up under the button it belongs to. */
+    #luckyStatus {
+      margin: -4px 0 12px 0;
+    }
+  </style>
+</head>
+<body>
+  <div style="text-align: center; margin-bottom: 15px;">
+    <img src="Eudaimonia_logo.png" alt="Eudaimonia" style="width: 60px; height: 60px;">
+  </div>
+  <h1>&#127919; SelfDev Goal Tracker</h1>
+  
+  <div class="token-display" id="tokenBox" style="cursor: pointer; transition: background 0.2s, transform 0.1s;" title="Click to buy more tokens">
+    <div class="token-count" id="tokenCount">0</div>
+    <div class="token-label">Tokens</div>
+    <div style="font-size: 10px; color: #2e7ba6; margin-top: 3px;">click to top up &#43;</div>
+  </div>
+  
+  <!-- Editing goals is the engagement loop the rest of the tool hangs off, so
+       it leads the stack. It is NOT lit at rest: nothing is. Position carries
+       the priority; lighting is reserved for the pointer and for Check In when
+       tokens are actually waiting. -->
+  <button id="profileBtn" class="btn-tonal-blue" style="margin-bottom: 10px;">
+    &#9999;&#65039; Edit Profile
+  </button>
+
+  <!-- The always-on route into recommendations: works on any page, whether or
+       not anything was blocked there. -->
+  <button id="luckyBtn" class="btn-tonal-indigo" style="margin-bottom: 10px;" title="Open one aligned recommendation on this page">
+    &#10024; Surprise Me
+  </button>
+
+  <div id="luckyStatus" class="note-amber" role="status" style="display: none;"></div>
+
+  <button id="checkinBtn" class="btn-tonal-green" style="margin-bottom: 10px;">
+    &#10003; Check In
+  </button>
+  
+  <button id="promoteBtn" class="btn-tonal-amber" style="margin-bottom: 20px;">
+    &#128640; Promote Link
+  </button>
+  
+  <div class="section">
+    <h2>Your Goals &amp; Systems</h2>
+    
+    <div id="moveTowardSection" style="margin-bottom: 15px;">
+      <div style="font-weight: 500; color: var(--eud-blue-text); margin-bottom: 5px;">Long Term Goals:</div>
+      <div id="moveTowardText" style="color: #666; font-size: 14px; line-height: 1.5;"></div>
+    </div>
+    
+    <div id="moveAwaySection" style="margin-bottom: 15px;">
+      <div style="font-weight: 500; color: var(--eud-red-text); margin-bottom: 5px;">Obstacles:</div>
+      <div id="moveAwayText" style="color: #666; font-size: 14px; line-height: 1.5;"></div>
+    </div>
+    
+    <div id="dailyHabitsSection" style="margin-bottom: 15px;">
+      <div style="font-weight: 500; color: var(--eud-green-text); margin-bottom: 5px;">Systems:</div>
+      <div id="dailyHabitsText" style="color: #666; font-size: 14px; line-height: 1.5;"></div>
+    </div>
+  </div>
+  
+  <script src="firebase-config.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
