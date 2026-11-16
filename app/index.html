@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- The browser enforces the request list in js/api.js: nothing but this
+       site, Firestore and Firebase anonymous auth can be contacted. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://eudaimonia-project.netlify.app; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14152b" media="(prefers-color-scheme: dark)">
+  <title>Eudaimonia</title>
+  <link rel="icon" href="img/logo48.png">
+  <link rel="apple-touch-icon" href="img/logo128.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top">
+    <a class="brand" href="#/picks" aria-label="Eudaimonia, home">
+      <img src="img/logo128.png" alt="" width="34" height="34">
+      <span>Eudaimonia</span>
+    </a>
+    <nav id="nav" aria-label="Sections" hidden>
+      <a href="#/picks" data-route="picks">Picks</a>
+      <a href="#/checkin" data-route="checkin">Check in</a>
+      <a href="#/profile" data-route="profile">Profile</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <p id="storageNote" class="note note-amber" hidden>
+      This browser won't let me save anything, so your answers will only last until you close this tab.
+    </p>
+
+    <!-- ── Start: the one required question ─────────────────────────── -->
+    <section id="view-start" class="view" hidden aria-labelledby="startTitle">
+      <p class="eyebrow">No account. No install.</p>
+      <h1 id="startTitle" tabindex="-1"><label for="startGoals">What are you working towards, and what habits help you get there?</label></h1>
+      <p class="lede">I'll show you picks from other people that match what you write, and ask you each week how it's going.</p>
+      <textarea id="startGoals" rows="6" autocomplete="off" aria-describedby="startHint startError"
+        placeholder="Run a 10k by spring&#10;Stretch every morning&#10;Read before bed instead of scrolling"></textarea>
+      <p id="startHint" class="hint">One per line works best. Each line comes back at your weekly check-in.</p>
+      <p id="startError" class="error" role="alert" hidden>Write at least a few words so I have something to match.</p>
+
+      <label class="check">
+        <input type="checkbox" id="startShare" checked>
+        <span>Share my goal phrases anonymously
+          <small>They're added to a public tally of what people are working on, so builders can see what's wanted. No name, email or ID goes with them. Untick this and what you write never leaves this browser.</small>
+        </span>
+      </label>
+
+      <button id="startBtn" class="btn btn-fill" type="button">Show my picks</button>
+      <p class="fine">Saved in this browser only. You can change or erase it any time.</p>
+    </section>
+
+    <!-- ── Picks ────────────────────────────────────────────────────── -->
+    <section id="view-picks" class="view" hidden aria-labelledby="picksTitle">
+      <h1 id="picksTitle" tabindex="-1">Picks for you</h1>
+      <p class="lede">Each one was submitted by a person and matched to what you wrote.</p>
+      <p id="picksStatus" class="note" role="status" hidden></p>
+      <div id="picksList" class="cards"></div>
+      <div id="picksEmpty" class="empty" hidden></div>
+      <div id="picksOther" hidden>
+        <h2>Other picks</h2>
+        <p class="hint">These don't match what you wrote. I'm showing them so you can see what's here.</p>
+        <div id="picksOtherList" class="cards"></div>
+      </div>
+      <p id="picksFoot" class="fine" hidden>Opening a pick counts one click for whoever shared it. At your next check-in I'll ask whether you're glad you tried it.</p>
+      <p class="links"><a href="#/profile">Improve my matches</a></p>
+    </section>
+
+    <!-- ── Weekly check-in ──────────────────────────────────────────── -->
+    <section id="view-checkin" class="view" hidden aria-labelledby="checkinTitle">
+      <h1 id="checkinTitle" tabindex="-1">Weekly check-in</h1>
+      <div id="checkinForm">
+        <p id="tokenMessage" class="note"></p>
+        <h2 id="systemsHeading">How did each of these go?</h2>
+        <div id="systemsList"></div>
+        <div id="gladSection" hidden>
+          <h2>Glad you tried it?</h2>
+          <p class="hint">You opened these since your last check-in. Only an anonymous yes or no count is sent.</p>
+          <div id="gladList"></div>
+        </div>
+        <div class="actions">
+          <button id="checkinSave" class="btn btn-fill" type="button">Save check-in</button>
+          <a class="btn" href="#/picks">Not now</a>
+        </div>
+      </div>
+      <div id="checkinDone" role="status" hidden></div>
+    </section>
+
+    <!-- ── Profile: optional ways to improve matches ────────────────── -->
+    <section id="view-profile" class="view" hidden aria-labelledby="profileTitle">
+      <h1 id="profileTitle" tabindex="-1">Improve my matches</h1>
+      <p class="lede">All optional. The more you tell me, the better the picks.</p>
+
+      <label class="field" for="pGoals">What are you working towards, and what habits help you get there?</label>
+      <textarea id="pGoals" rows="5" autocomplete="off"></textarea>
+
+      <label class="field" for="pAway">What gets in your way?</label>
+      <p class="hint" id="pAwayHint">Picks that mention these are filtered out.</p>
+      <textarea id="pAway" rows="3" autocomplete="off" aria-describedby="pAwayHint" placeholder="doomscrolling, sugar, late nights"></textarea>
+
+      <label class="field" for="pProducts">What products or services might help?</label>
+      <textarea id="pProducts" rows="3" autocomplete="off" placeholder="fitness apps, language courses, meal planning"></textarea>
+
+      <label class="field" for="pHabits">Habits to check in on</label>
+      <p class="hint" id="pHabitsHint">One per line. If you fill this in, the weekly check-in uses these lines instead of your first answer.</p>
+      <textarea id="pHabits" rows="3" autocomplete="off" aria-describedby="pHabitsHint"></textarea>
+
+      <label class="check">
+        <input type="checkbox" id="pShare">
+        <span>Share my goal phrases anonymously
+          <small>Added to a public tally of what people are working on. No name, email or ID goes with them.</small>
+        </span>
+      </label>
+
+      <div class="actions">
+        <button id="profileSave" class="btn btn-fill" type="button">Save and see picks</button>
+      </div>
+      <p id="profileStatus" class="note" role="status" hidden></p>
+
+      <hr>
+
+      <h2>Have something to share?</h2>
+      <p class="hint" id="pEmailHint">An email is only needed if you want to promote a pick of your own. It stays in this browser for now and isn't sent anywhere.</p>
+      <label class="field" for="pEmail">Email (optional)</label>
+      <input id="pEmail" type="email" inputmode="email" autocomplete="email" aria-describedby="pEmailHint pEmailError">
+      <p id="pEmailError" class="error" role="alert" hidden>That doesn't look like an email address.</p>
+      <div class="actions">
+        <button id="emailSave" class="btn" type="button">Save email</button>
+      </div>
+
+      <div id="promoterPanel" class="panel" hidden>
+        <h3>For promoters</h3>
+        <p><span id="balanceLine">Checking your tokens…</span></p>
+        <p class="hint">Tokens pay for showing a pick of your own. Promoting and topping up on the web come later; for now both work in the Chrome extension, which keeps a separate balance.</p>
+      </div>
+
+      <hr>
+
+      <h2>Start over</h2>
+      <p class="hint">Removes your goals, check-ins and anonymous sign-in from this browser. Counts already sent can't be recalled because nothing ties them to you.</p>
+      <div class="actions">
+        <button id="eraseBtn" class="btn btn-danger" type="button">Erase everything on this device</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>No account, no trackers. <a href="../Privacy.md">Privacy</a> · <a href="../">About Eudaimonia</a></p>
+  </footer>
+
+  <script src="js/store.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/match.js"></script>
+  <script src="js/glad.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
