@@ -52,6 +52,15 @@
         </span>
       </label>
 
+      <div class="panel builder">
+        <h2 id="builderTitle">Building something yourself?</h2>
+        <p class="hint" id="startEmailHint">You don't need an email to see picks. You do need one to add a pick of your own, so people working towards the same things can find it.</p>
+        <label class="field" for="startEmail">Email (optional)</label>
+        <input id="startEmail" type="email" inputmode="email" autocomplete="email" aria-describedby="startEmailHint startEmailNote startEmailError">
+        <p id="startEmailError" class="error" role="alert" hidden>That doesn't look like an email address. Fix it or leave it empty.</p>
+        <p class="fine" id="startEmailNote">It stays in this browser for now. Adding picks from the web is coming soon; today it works in the Chrome extension.</p>
+      </div>
+
       <button id="startBtn" class="btn btn-fill" type="button">Show my picks</button>
       <p class="fine">Saved in this browser only. You can change or erase it any time.</p>
     </section>

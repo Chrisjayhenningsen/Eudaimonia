@@ -19,6 +19,7 @@
   ]);
   var TITLES = { start: 'Eudaimonia', picks: 'Picks · Eudaimonia', checkin: 'Check-in · Eudaimonia', profile: 'Profile · Eudaimonia' };
 
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var exposuresBumped = false; // count one exposure per page load, not per tab switch
   var lastClickAt = {};
   var firstRoute = true;
@@ -81,6 +82,13 @@
       $('startGoals').focus();
       return;
     }
+    var email = $('startEmail').value.trim();
+    if (email && !EMAIL_RE.test(email)) {
+      show($('startEmailError'), true);
+      $('startEmail').focus();
+      return;
+    }
+    if (email) EudStore.set('promoterEmail', email); // device only; never sent
     var share = $('startShare').checked;
     EudStore.setMany({
       moveToward: text,
@@ -446,7 +454,7 @@
 
   function saveEmail() {
     var value = $('pEmail').value.trim();
-    var ok = value === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    var ok = value === '' || EMAIL_RE.test(value);
     show($('pEmailError'), !ok);
     if (!ok) { $('pEmail').focus(); return; }
     if (value) EudStore.set('promoterEmail', value);
@@ -467,6 +475,7 @@
     eraseArmedUntil = 0;
     btn.textContent = 'Erase everything on this device';
     $('startGoals').value = '';
+    $('startEmail').value = '';
     exposuresBumped = false;
     go('start');
   }
@@ -477,6 +486,7 @@
 
     $('startBtn').addEventListener('click', submitStart);
     $('startGoals').addEventListener('input', function () { show($('startError'), false); });
+    $('startEmail').addEventListener('input', function () { show($('startEmailError'), false); });
     $('checkinSave').addEventListener('click', saveCheckin);
     $('profileSave').addEventListener('click', saveProfile);
     $('emailSave').addEventListener('click', saveEmail);

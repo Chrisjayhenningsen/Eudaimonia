@@ -8,11 +8,12 @@
 // any profile. The read-modify-write runs in a transaction so concurrent
 // setups can't clobber each other's counts.
 //
-// NOTE: being open, this endpoint is spammable to inflate keyword counts —
-// the same accepted-for-launch tradeoff as record-click. Add rate-limiting
-// (per-IP per-window) later if the aggregation ever feeds anything load-bearing.
+// RATE LIMITING: being open, this endpoint is spammable to inflate keyword
+// counts. Setup happens rarely, so we cap it at 10 requests / hour per IP.
+// Over-limit callers get 429 and are simply dropped (analytics is best-effort
+// and the client already ignores the response). The limiter fails open.
 
-const { db, json, preflight } = require('./_admin');
+const { db, json, preflight, clientIp, checkRateLimit } = require('./_admin');
 
 // ─── Keyword extraction ───────────────────────────────────────────────────────
 // Moved here from the client so the counting logic is server-authoritative and
@@ -42,6 +43,12 @@ exports.handler = async (event) => {
   const pre = preflight(event);
   if (pre) return pre;
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
+
+  // Rate limit before any work: 10 setups/hour per IP is generous for a real
+  // person and caps count-inflation abuse.
+  const ip = clientIp(event);
+  const rl = await checkRateLimit(`agg:${ip}`, 10, 3600);
+  if (!rl.allowed) return json(429, { error: 'rate_limited' });
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'Invalid body' }); }

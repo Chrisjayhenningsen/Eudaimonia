@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    body {
+      width: 500px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    
+    .token-display {
+      background: #eef5fe;
+      border: 2px solid #2a68bd;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .token-count {
+      font-size: 32px;
+      font-weight: bold;
+      color: #2a68bd;
+    }
+    
+    .token-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .info-box {
+      background: #fdf2e3;
+      border: 1px solid var(--eud-amber-line);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .info-box p {
+      margin: 0 0 8px 0;
+      color: #666;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    .info-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    .info-box strong {
+      color: #a3610a;
+    }
+    
+    .field-group {
+      margin-bottom: 20px;
+    }
+    
+    .field-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .field-group .hint {
+      font-size: 12px;
+      color: #70757a;
+      font-weight: normal;
+      margin-left: 5px;
+    }
+    
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #2a68bd;
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    button {
+  padding: 12px 24px;
+  width: 100%;
+  margin-top: 10px;
+    }
+    
+    
+    
+    .button-secondary {
+  margin-top: 0;
+    }
+    
+    
+    .promo-stat-item {
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    
+    .promo-stat-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 2px;
+    }
+    
+    .promo-stat-url {
+      font-size: 11px;
+      color: #70757a;
+      font-family: monospace;
+      margin-bottom: 6px;
+    }
+    
+    .promo-stat-clicks {
+      font-size: 13px;
+      color: #333;
+    }
+    
+    .clicks-count {
+      font-size: 20px;
+      font-weight: bold;
+      color: #1c7a41;
+    }
+    
+    .clicks-tokens {
+      color: #a3610a;
+      font-size: 12px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .cost-display {
+      background: #e7f7ec;
+      border: 2px solid #1c7a41;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 15px;
+      text-align: center;
+      font-size: 16px;
+      color: #333;
+    }
+    
+    .cost-display .cost-amount {
+      font-size: 24px;
+      font-weight: bold;
+      color: #1c7a41;
+    }
+    
+    .warning {
+      background: #fdecea;
+      border: 2px solid #b3261e;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #b3261e;
+    }
+
+    .review-checking {
+      background: #f5f5f5;
+      border: 1px solid var(--eud-neutral-line);
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+    }
+
+    .review-blocked {
+      background: #fdecea;
+      border: 2px solid #b3261e;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #b3261e;
+      line-height: 1.5;
+    }
+
+    .review-blocked strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 15px;
+    }
+
+    .review-safe {
+      background: #e7f7ec;
+      border: 2px solid #1c7a41;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-top: 15px;
+      font-size: 13px;
+      color: var(--eud-green-text);
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 Promote a Link</h1>
+  <p class="subtitle">Share products and services aligned with the community's goals</p>
+  
+  <div class="token-display">
+    <div>
+      <div class="token-count" id="tokenCount">0</div>
+      <div class="token-label">Tokens Available</div>
+    </div>
+  </div>
+  
+  <div class="info-box">
+    <p><strong>How it works:</strong></p>
+    <p>• Every promotion costs <strong>1 token</strong> — new link or repeat, same price</p>
+    <p>• Your first-ever submission needs a quick email check (anti-spam only — see below)</p>
+    <p>• Each click depletes your promotion's budget by 1 — top up anytime from Advertiser Insights</p>
+    <p>• Promoting a link for the first time? You'll get the option to loop in the site's owner</p>
+  </div>
+  
+  <div class="field-group">
+    <label>
+      URL
+      <span class="hint">(The link you want to promote)</span>
+    </label>
+    <input type="url" id="promoUrl" placeholder="https://example.com" />
+  </div>
+  
+  <div class="field-group">
+    <label>
+      Title
+      <span class="hint">(Short, catchy name)</span>
+    </label>
+    <input type="text" id="promoTitle" placeholder="e.g., Productivity App for Writers" maxlength="80" />
+  </div>
+  
+  <div class="field-group">
+    <label>
+      Description
+      <span class="hint">(What makes this valuable?)</span>
+    </label>
+    <textarea id="promoDescription" placeholder="Explain what this is and why it's worth checking out..." maxlength="300"></textarea>
+  </div>
+  
+  <div class="field-group">
+    <label>
+      Keywords
+      <span class="hint">(Comma-separated, for matching with user goals)</span>
+    </label>
+    <input type="text" id="promoKeywords" placeholder="e.g., productivity, writing, focus, creativity" />
+  </div>
+
+  <div class="field-group" id="verifyEmailGroup" style="display: none;">
+    <label>
+      Verify your email
+      <span class="hint">(first submission only — anti-spam)</span>
+    </label>
+    <input type="email" id="promoterEmail" placeholder="you@example.com" />
+    <p style="font-size: 12px; color: #70757a; margin: 6px 0 0; line-height: 1.4;">
+      We store only a one-way cryptographic hash of this address — enough to confirm you're a real, unique
+      person, never enough to recover your email or connect it to your goals or anything else you've entered.
+    </p>
+  </div>
+
+  <div class="field-group" id="ownerInviteGroup" style="display: none;">
+    <div style="background: #eef5fe; border: 2px solid #2a68bd; border-radius: 8px; padding: 15px;">
+      <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #333; line-height: 1.5; margin: 0; cursor: pointer;">
+        <input type="checkbox" id="ownerInviteToggle" checked
+               style="width: 16px; height: 16px; min-width: 16px; padding: 0; margin: 2px 0 0; flex: 0 0 auto;" />
+        <span>💌 <strong>Invite the site owner.</strong> Looks like a link you haven't promoted before — if it belongs to someone else, leave this checked and a pre-written invitation email will open when you submit. You just add their address and send.</span>
+      </label>
+    </div>
+  </div>
+  
+  <div id="costDisplay" style="display: none;"></div>
+  <div id="warningDisplay" style="display: none;"></div>
+  <div id="reviewDisplay" style="display: none;"></div>
+  
+  <div class="button-group">
+    <button class="button-secondary" id="cancelBtn">Cancel</button>
+    <button id="submitBtn" style="flex: 2;">Submit Promotion</button>
+  </div>
+  
+  <button id="insightsBtn" class="button-secondary" style="margin-top: 15px;">
+    📊 View Advertiser Insights
+  </button>
+  
+  <script src="firebase-config.js"></script>
+  <script src="promote.js"></script>
+</body>
+</html>

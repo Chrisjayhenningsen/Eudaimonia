@@ -1,0 +1,651 @@
+/* Modal Styles */
+#eudaimonia-block-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.eudaimonia-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.eudaimonia-modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  max-width: 450px;
+  width: 90%;
+}
+
+.eudaimonia-modal-content h2 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.eudaimonia-modal-content > p {
+  margin: 0 0 20px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Popover mode: used when the right-clicked element sits inside a
+   fixed, extremely-high-z-index ancestor (e.g. Taboola's "Next Up"
+   widget at z-index:9999999999). Rather than competing with that
+   ancestor in the global stacking order - which is unwinnable once both
+   sides are pinned near the real CSS maximum - this variant is inserted
+   as a CHILD of that same ancestor, so it only needs to render above its
+   own siblings within that inherited stacking context. It therefore
+   overrides the base #eudaimonia-block-modal rule's fixed, full-viewport
+   positioning with a small, absolutely-positioned card instead. */
+#eudaimonia-block-modal.eudaimonia-popover-mode {
+  position: absolute;
+  top: auto;
+  left: auto;
+  width: auto;
+  height: auto;
+  /* No competing with anything globally here - we only need to clear
+     this ancestor's own immediate children, so a modest local z-index
+     is enough. */
+  z-index: 999999;
+}
+
+.eudaimonia-popover-content {
+  position: static;
+  top: auto;
+  left: auto;
+  transform: none;
+  max-width: none;
+  width: 100%;
+  padding: 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+.eudaimonia-popover-content h2 {
+  font-size: 16px;
+}
+
+.eudaimonia-popover-content > p {
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.eudaimonia-popover-content .eudaimonia-option-group {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.eudaimonia-popover-content .eudaimonia-option-btn {
+  padding: 10px;
+}
+
+.eudaimonia-popover-content .eudaimonia-option-title {
+  font-size: 13px;
+}
+
+.eudaimonia-popover-content .eudaimonia-option-desc {
+  font-size: 11px;
+}
+
+.eudaimonia-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.eudaimonia-option-btn {
+  background: #f0f7ff;
+  border: 2px solid #4a9eff;
+  border-radius: 8px;
+  padding: 15px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.eudaimonia-option-btn:hover {
+  background: #e0f0ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.2);
+}
+
+.eudaimonia-option-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.eudaimonia-option-desc {
+  font-size: 13px;
+  color: #666;
+}
+
+#eud-category-input {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+#eud-domain-input {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+#eud-category-input label,
+#eud-domain-input label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+#eud-category-text,
+#eud-domain-text {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+
+#eud-category-text:focus,
+#eud-domain-text:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.eudaimonia-primary-btn {
+  background: #4a9eff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+}
+
+.eudaimonia-primary-btn:hover {
+  background: #3a8eef;
+}
+
+.eudaimonia-cancel-btn {
+  background: #e0e0e0;
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+}
+
+.eudaimonia-cancel-btn:hover {
+  background: #d0d0d0;
+}
+
+/* Blocked Content Badge */
+.eudaimonia-blocked-badge {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 2147483643;
+  pointer-events: all;
+}
+
+/* Video variant: sits above the player rather than over the picture, so it
+   never covers the video the user actually wants to watch. Kept compact
+   because a full-size badge above a player pushes the video down the page. */
+.eudaimonia-blocked-badge--video {
+  padding: 8px 12px;
+  gap: 10px;
+  margin: 0 0 8px 0;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.eudaimonia-blocked-badge--video .eudaimonia-badge-logo {
+  width: 22px;
+  height: 22px;
+}
+
+.eudaimonia-blocked-badge--video .eudaimonia-badge-text {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.eudaimonia-blocked-badge--video .eudaimonia-badge-link {
+  font-size: 11px;
+}
+
+/* In fullscreen only the fullscreened subtree renders, so a badge anchored
+   outside the player disappears on its own. This covers the case where the
+   player shell we anchored against is itself the element going fullscreen. */
+:fullscreen .eudaimonia-blocked-badge--video,
+:root:has(:fullscreen) .eudaimonia-blocked-badge--video {
+  display: none !important;
+}
+
+.eudaimonia-blocked-badge:hover {
+  background: #fafafa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border-color: #4a9eff;
+}
+
+.eudaimonia-badge-logo {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.eudaimonia-badge-text {
+  flex-grow: 1;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+.eudaimonia-badge-link {
+  color: #4a9eff;
+  font-weight: 500;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* "Not an ad" false-positive recovery control.
+
+   Visually subordinate to the primary click (which opens the sidebar): it sits
+   out of the badge's text flow, stays quiet until the badge is hovered or
+   keyboard-focused, and never competes for the same pixels. Every property is
+   stated explicitly because this button is injected into arbitrary pages whose
+   own `button {}` rules would otherwise leak in. */
+.eudaimonia-blocked-badge .eudaimonia-not-an-ad {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: #9aa0a6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.eudaimonia-blocked-badge:hover .eudaimonia-not-an-ad,
+.eudaimonia-blocked-badge:focus-within .eudaimonia-not-an-ad {
+  opacity: 0.75;
+}
+
+.eudaimonia-blocked-badge .eudaimonia-not-an-ad:hover,
+.eudaimonia-blocked-badge .eudaimonia-not-an-ad:focus-visible {
+  opacity: 1;
+  background: #f1f3f4;
+  border-color: #dadce0;
+  color: #d93025;
+  outline: none;
+}
+
+.eudaimonia-blocked-badge .eudaimonia-not-an-ad:focus-visible {
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.5);
+}
+
+/* Touch and other no-hover inputs never fire :hover, so the control has to be
+   permanently visible there or it would be unreachable. */
+@media (hover: none) {
+  .eudaimonia-blocked-badge .eudaimonia-not-an-ad {
+    opacity: 0.75;
+  }
+}
+
+/* ── Dark variant (Feature B) ───────────────────────────────────────────────
+   Applied by applyBadgeTheme() when the sampled background behind the badge
+   falls below the WCAG light/dark crossover luminance. Not driven by
+   prefers-color-scheme: sites override that constantly, and what matters is
+   the pixels actually behind this badge. */
+.eudaimonia-blocked-badge--dark {
+  background: #1f2023;
+  border-color: #3c4043;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.eudaimonia-blocked-badge--dark:hover {
+  background: #26282c;
+  border-color: #4a9eff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.eudaimonia-blocked-badge--dark .eudaimonia-badge-text {
+  color: #e8eaed;
+}
+
+.eudaimonia-blocked-badge--dark .eudaimonia-badge-link {
+  color: #8ab4f8;
+}
+
+.eudaimonia-blocked-badge--dark .eudaimonia-not-an-ad {
+  color: #9aa0a6;
+}
+
+.eudaimonia-blocked-badge--dark .eudaimonia-not-an-ad:hover,
+.eudaimonia-blocked-badge--dark .eudaimonia-not-an-ad:focus-visible {
+  background: #3c4043;
+  border-color: #5f6368;
+  color: #f28b82;
+}
+
+/* ── Chip form (badgeDismissMode: 'chip') ───────────────────────────────────
+   After the primary click the badge shrinks to a logo-sized dot: reclaims the
+   space, kills the big light block, but keeps a quiet "we blocked something
+   here, click to reopen" affordance and the ambient signal that the extension
+   is working. Hovering it slides the "not an ad" control back out, so a false
+   positive is still correctable after the sidebar has been opened. */
+.eudaimonia-blocked-badge--chip {
+  width: -moz-fit-content;
+  width: fit-content;
+  padding: 5px;
+  gap: 0;
+  margin: 6px 0;
+  min-height: 0;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.eudaimonia-blocked-badge--chip .eudaimonia-badge-text {
+  display: none;
+}
+
+.eudaimonia-blocked-badge--chip .eudaimonia-badge-logo {
+  width: 20px;
+  height: 20px;
+}
+
+/* In chip form the control rejoins the flow (rather than floating in the
+   corner of a box that no longer exists) and expands out of zero width. */
+.eudaimonia-blocked-badge--chip .eudaimonia-not-an-ad {
+  position: static;
+  top: auto;
+  right: auto;
+  width: 0;
+  height: 20px;
+  margin-left: 0;
+  border-color: transparent;
+  background: transparent;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.18s ease, margin 0.18s ease, opacity 0.18s ease;
+}
+
+.eudaimonia-blocked-badge--chip:hover .eudaimonia-not-an-ad,
+.eudaimonia-blocked-badge--chip:focus-within .eudaimonia-not-an-ad {
+  width: 20px;
+  margin-left: 5px;
+  opacity: 0.85;
+}
+
+@media (hover: none) {
+  .eudaimonia-blocked-badge--chip .eudaimonia-not-an-ad {
+    width: 20px;
+    margin-left: 5px;
+    opacity: 0.85;
+  }
+}
+
+/* ── Collapse (badgeDismissMode: 'collapse') ────────────────────────────────
+   Removes the badge and collapses the space so the page reflows as if the ad
+   had never been there. Declared AFTER the :hover rule above and with two
+   classes so it wins the cascade even while the pointer is still over the
+   badge - otherwise the hover lift fights the collapse transform.
+
+   Note: the transition lives here rather than on the base class, because the
+   base sets `transition: all 0.2s` which would otherwise clip this to 200ms. */
+.eudaimonia-blocked-badge.eudaimonia-blocked-badge--collapsing {
+  height: 0 !important;
+  min-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  opacity: 0;
+  transform: scale(0.9) rotate(-1.5deg);
+  pointer-events: none;
+  overflow: hidden;
+  transition:
+    height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1),
+    opacity 0.26s ease;
+}
+
+/* Confirmation after a restore. */
+.eudaimonia-restore-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #202124;
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 2147483646;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: 300px;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* Promotion Sidebar Styles */
+.eudaimonia-promo-sidebar {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 100%;
+  background: white;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+  z-index: 2147483645;
+  transition: right 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow-y: auto;
+}
+
+.eudaimonia-promo-sidebar.show {
+  right: 0;
+}
+
+.eudaimonia-sidebar-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.eudaimonia-sidebar-header h2 {
+  margin: 0 0 5px 0;
+  font-size: 20px;
+}
+
+.eudaimonia-sidebar-header p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.eudaimonia-close-sidebar {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.eudaimonia-close-sidebar:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.eudaimonia-promo-list {
+  padding: 20px;
+}
+
+.eudaimonia-promo-card {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.eudaimonia-promo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #4a9eff;
+}
+
+.eudaimonia-promo-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.eudaimonia-promo-url {
+  font-size: 12px;
+  color: #4a9eff;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  font-family: monospace;
+}
+
+.eudaimonia-promo-description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0 0 12px 0;
+}
+
+.eudaimonia-promo-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #999;
+}
+
+.eudaimonia-promo-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.eudaimonia-keyword-tag {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.eudaimonia-no-promos {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.eudaimonia-no-promos-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.eudaimonia-no-promos p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.eudaimonia-sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 2147483644;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.eudaimonia-sidebar-backdrop.show {
+  opacity: 1;
+  pointer-events: all;
+}

@@ -161,7 +161,10 @@ textarea:focus-visible, input[type="email"]:focus-visible {
 .btn[disabled] { opacity: 0.6; cursor: progress; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
-#startBtn { width: 100%; }
+#startBtn { width: 100%; margin-top: 24px; }
+.builder h2 { margin-top: 0; font-size: 1.15rem; }
+.builder .field { margin-top: 14px; }
+.builder .fine { margin: 10px 0 0; }
 
 /* ── Notes and panels ───────────────────────────────────────────────── */
 .note {

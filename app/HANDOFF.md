@@ -1,45 +1,61 @@
 # Eudaimonia web app: handoff
 
-Branch `web-app`. Never commit to `main`: each production deploy costs 15 Netlify credits. Branch deploys and Deploy Previews are free.
+Paste this into a new session, with the repo `Chrisjayhenningsen/Eudaimonia` attached (the Claude GitHub App is installed and can push).
+
+## Rules that still apply
+- Work on branch `web-app`. Never commit or push to `main`. Merging PR #1 is Chris's decision: it triggers a production deploy (15 Netlify credits). Pushes to `web-app` only rebuild the free Deploy Preview.
+- Fewer, bigger pushes. Test offline first (node tests, headless Chrome with mocked network).
+- No framework, build step, external scripts, fonts or CDNs. Commonwealth spelling. The app speaks as "I" to "you".
+- Privacy: only the requests listed at the top of `app/js/api.js`. The email never leaves the device in Phase 1.
+- Don't change the landing page (`index.html` at the root), Firestore rules, or anything in the Firebase, Stripe or Netlify dashboards. Don't move, rename or delete existing files.
+- Shared globals use `var`. Await writes before any navigation. Run `node --check` on every JS file before calling anything done.
+- Scan for secrets before each commit.
+- Chris prefers short sessions, mechanism explained, falsification-first debugging, and short reports.
+
+## Where things are
+- PR (draft, do not merge): https://github.com/Chrisjayhenningsen/Eudaimonia/pull/1
+- Preview: https://deploy-preview-1--eudaimonia-project.netlify.app/app/
+- Production site: https://eudaimonia-project.netlify.app (Firebase project `eudaimonia-350ce`)
 
 ## State (2026-11-15)
-Phase 1 (the loop) is built and tested offline. Not yet pushed or tested against the live backend end to end.
+Phase 1 (the loop) is built, pushed and live on the preview. Chris is testing it on his phone and laptop. Later phases have not been started and wait for his word:
+1. Weekly reminder with no backend: an "add to calendar" recurring event linking to `/app/#/checkin`. Test on iOS Safari and Android Chrome; say so if unreliable.
+2. Promoting your own pick and topping up tokens on the web.
 
-## Files
+## What is on the branch
 - `app/index.html` one page, four views by URL hash: `#/start`, `#/picks`, `#/checkin`, `#/profile`
-- `app/css/app.css` palette from the extension's `ui.css`, light and dark
+- `app/css/app.css` palette from the extension's `ui.css`, light and dark, designed at 380px
 - `app/js/store.js` localStorage wrapper, same key names as chrome.storage
-- `app/js/api.js` every network request (list at the top of the file)
-- `app/js/match.js` `matchPromotions` + `applyExposureRotation` copied from `content.js`, plus `rankPicks` (score, then smoothed glad rate, then rotation)
+- `app/js/api.js` every network request
+- `app/js/match.js` `matchPromotions` + `applyExposureRotation` copied from `content.js`, plus `rankPicks` (score, then smoothed glad rate `(yes+2)/(yes+no+4)`, then rotation)
 - `app/js/glad.js` "Glad you tried it?", written to back-port to the extension check-in
 - `app/js/app.js` views and wiring
 - `app/tests/logic.test.js` run with `node app/tests/logic.test.js`
-- `netlify/functions/record-glad.js` NEW function: atomic +1 on `promotions/{id}.gladYes|gladNo`
+- `netlify/functions/record-glad.js` new: atomic +1 on `promotions/{id}.gladYes|gladNo`
+- `netlify/functions/` updated from Chris's disk: rate limiting in `_admin.js`, `record-click`, `aggregate-keywords`, `report-ad-signature`; new `check-url.js`
+- `extension/` the v0.9 Chrome extension source from Chris's disk (source of truth from now on). The stale v0.7.7 files in the repo root are untouched; removing them is a later decision for Chris.
 
 ## Decisions made with Chris
 - One text box for goals and habits, stored in `moveToward`. Check-in uses `dailyHabits` lines if the profile has them, otherwise each line of `moveToward`.
 - Sharing goal phrases (`aggregate-keywords`) is opt-out, key `shareKeywords`.
-- Glad votes: no auth, IP rate limit only (and only once the rate-limited `_admin.js` is deployed).
-- Email is optional, device-only (`promoterEmail`), and reveals the promoter panel. Never sent anywhere in Phase 1.
+- Glad votes: no auth, IP rate limit only. Yes/No is sent once and never asked again; "Haven't tried it yet" carries over up to three check-ins.
+- Optional email on the start screen and the profile (`promoterEmail`, device only). It is the hook for builders: not needed to see picks, needed to add your own. It reveals the promoter panel on the profile.
 - Web tokens are a separate anonymous account from the extension's.
-
-## New storage keys (beyond the extension's)
-`shareKeywords`, `promoterEmail`, `openedPicks`, `gladAnswered`
+- New storage keys beyond the extension's: `shareKeywords`, `promoterEmail`, `openedPicks`, `gladAnswered`.
 
 ## Verified
 - `node --check` on every JS file; logic tests pass.
-- Headless Chrome at 380px, light and dark, with mocked network: start, picks, open a pick, check-in, glad answer, profile, and the all-requests-blocked path. No console errors, no horizontal overflow.
-- From `https://eudaimonia-project.netlify.app` in a real browser: anonymous sign-up works with the existing API key, flags and promotions are readable (72 promotions, 69 with budget).
+- Headless Chrome at 380px, light and dark, mocked network: full loop plus the all-requests-blocked path. No console errors, no overflow.
+- On the preview in a real browser: page loads, 72 live promotions fetched and ranked, anonymous sign-up works with the existing API key, `record-glad` returns 400 for a bad answer and 404 for an unknown promotion.
 
 ## Not verified
-- `record-glad` against real Firestore (needs a deploy preview).
-- `claim-onboarding`, `earn-checkin`, `record-click` from the web origin (CORS is `*`, so expected to work).
-- Real phones (iOS Safari, Android Chrome).
-- Whether Deploy Previews run the branch's functions with production env vars (Netlify default: yes).
+- A real glad vote, check-in reward and click from the web (Chris's own test covers these).
+- Real phones.
+- The updated functions under production load; they only run on the preview until the PR is merged.
 
-## Known gaps / follow-ups
-- Repo functions are older than Chris's local copies (no rate limiting, no `check-url`). `record-glad` uses the limiter only if `_admin` exports it.
-- `config/featureFlags` is publicly readable and contains `safeBrowsingKey`. Move it to a Netlify env var.
+## Open items for Chris
+- `check-url` needs a `SAFE_BROWSING_KEY` environment variable in Netlify; without it the function answers "not checked" and lets the URL through.
+- `config/featureFlags` is publicly readable and contains `safeBrowsingKey`. Move it to that env var and delete the field.
+- The rate limiter writes to a `rateLimits` collection with an `expiresAt` field. Without a Firestore TTL policy on that field the documents accumulate.
 - Matching is case-sensitive on promotion keywords (inherited from the extension): a keyword stored as "Running" never matches.
-- Later phases, only when asked: calendar reminder linking to `#/checkin`; promoting and token top-up on the web.
-- Latest extension source (v0.9) lives only on Chris's disk; proposal is an `extension/` folder in the repo.
+- `backend/` on Chris's disk (runbooks, older function copies, a backfill script) was not added to the repo.

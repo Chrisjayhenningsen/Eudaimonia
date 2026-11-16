@@ -5,11 +5,17 @@
 // viewer who clicks a recommendation triggers this), but the transaction
 // guards budget > 0 so a promo can never be charged below zero.
 //
-// NOTE: like any click endpoint this is spammable to drain a competitor's
-// budget. That's classic click-fraud and is out of scope for launch; add
-// rate-limiting / dedup (per-IP or per-uid per-promo per-window) later.
+// RATE LIMITING (anti click-fraud): this endpoint is the most abusable one —
+// hammering it drains a competitor's promotion budget. We apply two Firestore-
+// backed limits before doing anything:
+//   • per-IP burst        — 40 requests / minute across all promos, to stop a
+//                           script spraying clicks over many promotions.
+//   • per-(IP, promo)     —  5 requests / hour on any single promo, so one
+//                           source can't drain one promo's budget.
+// Over-limit requests are dropped entirely (not counted, not charged) with 429.
+// The limiter fails open, so a Firestore hiccup can never break click recording.
 
-const { db, FieldValue, json, preflight } = require('./_admin');
+const { db, FieldValue, json, preflight, clientIp, checkRateLimit } = require('./_admin');
 
 exports.handler = async (event) => {
   const pre = preflight(event);
@@ -19,6 +25,13 @@ exports.handler = async (event) => {
   let promoId;
   try { ({ promoId } = JSON.parse(event.body)); } catch (e) { return json(400, { error: 'Invalid body' }); }
   if (!promoId) return json(400, { error: 'Missing promoId' });
+
+  // ── Rate limits (checked before any write) ────────────────────────────────
+  const ip = clientIp(event);
+  const burst = await checkRateLimit(`click:${ip}`, 40, 60);
+  if (!burst.allowed) return json(429, { error: 'rate_limited' });
+  const perPromo = await checkRateLimit(`click:${ip}:${promoId}`, 5, 3600);
+  if (!perPromo.allowed) return json(429, { error: 'rate_limited' });
 
   try {
     const promoRef = db.collection('promotions').doc(promoId);
