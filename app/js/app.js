@@ -47,7 +47,7 @@
   function route() {
     var name = (location.hash || '').replace(/^#\/?/, '') || 'picks';
     var ready = !!EudStore.get('setupComplete', false);
-    if (!ready) name = 'start';
+    if (!ready && name !== 'add') name = 'start';
     else if (name === 'start' || !TITLES[name]) name = 'picks';
 
     VIEWS.forEach(function (v) { show($('view-' + v), v === name); });
@@ -77,6 +77,29 @@
   }
 
   // ─── Start ────────────────────────────────────────────────────────────────
+  function startEmailOk(required) {
+    var email = $('startEmail').value.trim();
+    var ok = EMAIL_RE.test(email) || (!email && !required);
+    $('startEmailError').textContent = email
+      ? "That doesn't look like an email address. Fix it or leave it empty."
+      : 'Adding an ad needs an email address.';
+    show($('startEmailError'), !ok);
+    if (!ok) { $('startEmail').focus(); return false; }
+    if (email) {
+      EudStore.set('promoterEmail', email); // device only until the first pick
+      $('aEmail').value = email;
+    }
+    return true;
+  }
+
+  // "Add an ad" works before setup: a builder may not want picks at all.
+  // Goals typed above are kept (and set up) as if "Show my picks" was pressed.
+  function startAdd() {
+    if (!startEmailOk(true)) return;
+    if ($('startGoals').value.trim().length >= 3) saveStart();
+    go('add');
+  }
+
   function submitStart() {
     var text = $('startGoals').value.trim();
     if (text.length < 3) {
@@ -84,13 +107,13 @@
       $('startGoals').focus();
       return;
     }
-    var email = $('startEmail').value.trim();
-    if (email && !EMAIL_RE.test(email)) {
-      show($('startEmailError'), true);
-      $('startEmail').focus();
-      return;
-    }
-    if (email) EudStore.set('promoterEmail', email); // device only; never sent
+    if (!startEmailOk(false)) return;
+    saveStart();
+    go('picks');
+  }
+
+  function saveStart() {
+    var text = $('startGoals').value.trim();
     var share = $('startShare').checked;
     EudStore.setMany({
       moveToward: text,
@@ -98,10 +121,9 @@
       setupComplete: true,
       setupDate: new Date().toISOString()
     });
-    go('picks');
 
-    // After the page has moved on. Both are best-effort; this is a single
-    // page, so there is no navigation to cut them off.
+    // Best-effort and not awaited; this is a single page, so moving on to
+    // another view can't cut them off.
     if (share) EudApi.aggregateKeywords(getProfile());
     EudApi.claimOnboarding();
   }
@@ -740,6 +762,7 @@
     show($('storageNote'), !EudStore.isPersistent());
 
     $('startBtn').addEventListener('click', submitStart);
+    $('startAddBtn').addEventListener('click', startAdd);
     $('startGoals').addEventListener('input', function () { show($('startError'), false); });
     $('startEmail').addEventListener('input', function () { show($('startEmailError'), false); });
     $('checkinSave').addEventListener('click', saveCheckin);

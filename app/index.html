@@ -52,6 +52,9 @@
         </span>
       </label>
 
+      <button id="startBtn" class="btn btn-fill" type="button">Show my picks</button>
+      <p class="fine">Saved in this browser only. You can change or erase it any time.</p>
+
       <div class="panel builder">
         <h2 id="builderTitle">Building something yourself?</h2>
         <p class="hint" id="startEmailHint">You don't need an email to see picks. You do need one to add a pick of your own, so people working towards the same things can find it.</p>
@@ -59,10 +62,9 @@
         <input id="startEmail" type="email" inputmode="email" autocomplete="email" aria-describedby="startEmailHint startEmailNote startEmailError">
         <p id="startEmailError" class="error" role="alert" hidden>That doesn't look like an email address. Fix it or leave it empty.</p>
         <p class="fine" id="startEmailNote">It stays in this browser until you add your first pick. Then it's sent once so the server can keep a one-way fingerprint of it, which stops one person making many accounts. The address itself isn't stored.</p>
+        <div class="actions"><button id="startAddBtn" class="btn" type="button">Add an ad</button></div>
       </div>
 
-      <button id="startBtn" class="btn btn-fill" type="button">Show my picks</button>
-      <p class="fine">Saved in this browser only. You can change or erase it any time.</p>
     </section>
 
     <!-- ── Picks ────────────────────────────────────────────────────── -->

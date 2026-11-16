@@ -162,9 +162,11 @@ textarea:focus-visible, input[type="email"]:focus-visible, input[type="url"]:foc
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 #startBtn { width: 100%; margin-top: 24px; }
+.builder { margin-top: 30px; }
 .builder h2 { margin-top: 0; font-size: 1.15rem; }
 .builder .field { margin-top: 14px; }
 .builder .fine { margin: 10px 0 0; }
+.builder .actions { margin-top: 16px; }
 
 /* ── Notes and panels ───────────────────────────────────────────────── */
 .note {
